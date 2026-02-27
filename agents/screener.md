@@ -66,13 +66,16 @@ For each stock in the universe:
    - Negative ROIC for 3+ consecutive years
    - Revenue per share declining 5+ years
 
+5. **Double-Plus Potential Check**: Using historical margins and historical valuation multiples, estimate whether the stock could more than double (100%+ upside) over 2-3 years. Check for "coiled spring" potential — compressed margins AND compressed multiples that could both expand. **REMOVE if historical data doesn't support double-plus potential.**
+
 ### Phase 1C: Step 2 Filter — The 5 Checks
 
 For each surviving stock, run all 5 checks. Use `bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh screen-data TICKER` to get batch data.
 
 **Check 1: SOLVENCY**
 - Pull: cash, current debt, long-term debt, FCF from balance sheet and cash flow
-- FAIL if: negative FCF AND debt > 3x cash AND no obvious refinancing path
+- FAIL if: solvency risk is real AND the stock price has NOT fallen enough to price in that risk (market still seems optimistic despite genuine survival questions)
+- PASS if: solvency risk IS priced in (dramatic decline, e.g., 80%+) AND company can likely survive — flag as "solvency_borderline" for Analyst
 - If borderline: flag as "solvency_borderline" for the Analyst to investigate further
 
 **Check 2: DILUTION**
@@ -80,6 +83,7 @@ For each surviving stock, run all 5 checks. Use `bash ${CLAUDE_PLUGIN_ROOT}/scri
 - Calculate: SBC as % of revenue for each of last 5 years
 - FAIL if: SBC > 5% of revenue in latest year WITHOUT per-share revenue growing faster
 - FAIL if: shares outstanding increased AND revenue per share decreased (issuing shares to stay alive)
+- **IMMEDIATE DQ**: If shares were issued specifically to pay down debt or fund interest payments (check cash flow for equity proceeds concurrent with debt repayment) — near-immediate disqualification regardless of other metrics
 - If borderline: flag as "dilution_borderline"
 
 **Check 3: REVENUE GROWTH**
@@ -92,7 +96,7 @@ For each surviving stock, run all 5 checks. Use `bash ${CLAUDE_PLUGIN_ROOT}/scri
 **Check 4: ROCE/ROIC**
 - Pull: ROIC from key metrics (10yr history)
 - Calculate: median ROIC over available history
-- FAIL if: median < 6% AND no cyclical recovery pattern
+- FAIL if: median < 6% AND no cyclical recovery pattern AND worst in its peer group
 - For cyclicals: check if up-cycle ROIC reaches 10%+. If yes, acceptable even if median is lower.
 - If borderline: flag as "roic_borderline"
 

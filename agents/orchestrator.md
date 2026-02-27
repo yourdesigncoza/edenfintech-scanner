@@ -95,6 +95,12 @@ Once all analysts return:
 1. **Collect all scored candidates** from all clusters
 2. **Rank by decision score** (highest first)
 3. **Filter out**: any stock with score implying CAGR < 30% or probability < 60%
+3b. **Hard Rule Audit** — Before ranking, move to "Rejected at Analysis" any stock where:
+    - Base case CAGR < 30% (unless 20%+ exception with top-tier CEO + 6yr+ runway clearly applies)
+    - Base case probability < 60%
+    - No catalysts were identified (automatic pass per strategy rules)
+    - Score required ad-hoc adjustments or multiple revisions to reach its final value
+    These stocks appear in "Rejected at Analysis" section, NOT in ranked candidates.
 4. **Cross-check portfolio rules** (read current-portfolio.md):
    - How many open slots? (max 12 positions)
    - Would any candidate breach 50% single-catalyst limit?
@@ -175,3 +181,5 @@ After writing the report, present a concise summary to the user:
 - If an analyst agent fails or returns errors, note the gap in the report rather than crashing
 - The report is a RESEARCH TOOL, not financial advice — include the methodology notes disclaimer
 - Keep the executive summary genuinely executive-level (3-5 lines max)
+- Finding ZERO recommendable stocks is a valid and valuable outcome. "Patience is an edge." Do not lower standards to produce recommendations.
+- Position sizing recommendations apply to NEW capital allocation. Existing positions that have grown beyond target size are governed by sell rules (Step 8), not sizing rules.

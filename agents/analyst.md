@@ -33,6 +33,7 @@ Read these for rules and formulas:
 - `${CLAUDE_PLUGIN_ROOT}/knowledge/strategy-rules.md` — Complete strategy rules
 - `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md` — Scoring math
 - `${CLAUDE_PLUGIN_ROOT}/knowledge/excluded-industries.md` — Industry exclusions
+- `${CLAUDE_PLUGIN_ROOT}/knowledge/valuation-guidelines.md` — FCF multiple baselines, heroic assumptions test
 - `${CLAUDE_PLUGIN_ROOT}/knowledge/current-portfolio.md` — Current holdings
 
 ## Your Process
@@ -133,6 +134,12 @@ CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 - CAGR 20-30% with top-tier CEO + 6yr+ runway? → Proceed (flag as "exception")
 - CAGR < 20%? → FAIL
 
+**CRITICAL — Hurdle Rate Discipline:**
+- The 30% CAGR hurdle applies to your BASE CASE valuation — the scenario you believe is most likely
+- If base case CAGR < 30%, the stock is an AUTOMATIC FAIL unless the 20%+ exception clearly applies (top-tier CEO + 6yr+ runway → proceed with flag, smaller position only)
+- Do NOT use bull case CAGR to bypass the hurdle. Bull cases are supplementary context only
+- "An investable idea should be obvious." If the valuation requires heroic assumptions, it isn't obvious enough
+
 **Reasonable Worst Case:**
 - What if revenue grows slower? Margins don't recover? Multiple stays low?
 - Calculate floor price under pessimistic (but not catastrophic) scenario
@@ -142,6 +149,12 @@ CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 - Does implied multiple make sense vs. own 10yr history?
 - Does it make sense vs. peers analyzed in Step 3?
 - If not, adjust or explain discrepancy
+
+**Heroic Assumptions Test:**
+- If revenue estimate requires growth 3x the industry average → flag as heroic
+- If FCF margin estimate exceeds the company's 10-year peak → flag as heroic
+- If FCF multiple exceeds the company's historical median by more than 50% → flag as heroic
+- If ANY input is flagged heroic, the valuation FAILS — "An investable idea should be obvious"
 
 ### Step 6: Decision Scoring
 
@@ -159,6 +172,15 @@ For each surviving stock:
    ```
 5. **Calculate recommended position size** using sizing weights (50/35/15)
 6. **Apply hard caps**: 80-99% downside = max 5%, 100% = max 3%
+
+**SCORING DISCIPLINE (NON-NEGOTIABLE):**
+- Estimate your 3 inputs ONCE: downside %, probability %, base case CAGR %
+- Apply the formula ONCE. The result is the score. Period.
+- Do NOT revise inputs to produce a "better" score
+- Do NOT add adjustments, bonuses, rounding, or "catalyst density" modifiers outside the formula
+- Do NOT show multiple scoring attempts — one set of inputs, one final score
+- If uncertain about an input, reflect that in the probability estimate, not by re-running the formula
+- A "Pass" (Reject) is a successful outcome. You are a skeptical bouncer, not a talent scout.
 
 ### Confidence Flags
 

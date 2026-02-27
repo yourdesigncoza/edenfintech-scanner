@@ -49,6 +49,20 @@ Used to determine how much capital goes into each position.
 | Downside risk of 80-99% | Position capped at 5% |
 | Downside risk of 100% (total loss possible) | Position capped at 3% |
 
+### Score-to-Position-Size Mapping
+
+The decision score directly dictates the maximum position size for new capital:
+
+| Score Range | Max Position Size | Interpretation |
+|-------------|-------------------|----------------|
+| 75+ | 15-20% | Highest conviction — exceptional risk/reward |
+| 65-74 | 10-15% | Strong opportunity — clear thesis with manageable risk |
+| 55-64 | 6-10% | Good opportunity — some uncertainty but favorable asymmetry |
+| 45-54 | 3-6% | Moderate — acceptable but meaningful questions remain |
+| Below 45 | 0% (Watchlist) | Insufficient score — do not invest |
+
+Note: These maximums are FURTHER constrained by the hard breakpoints above (CAGR, probability, downside caps). The lower of the two limits applies.
+
 ### Portfolio-Level Rules
 
 | Rule | Limit |

@@ -1,0 +1,8 @@
+{
+  "name": "edenfintech-scanner",
+  "version": "0.1.0",
+  "description": "On-demand NYSE stock scanner using EdenFinTech deep value turnaround strategy",
+  "author": {
+    "name": "John Montgomery"
+  }
+}

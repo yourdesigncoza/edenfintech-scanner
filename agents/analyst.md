@@ -1,16 +1,16 @@
 ---
 name: edenfintech-analyst
-description: Use this agent for deep analysis of stock candidates through EdenFinTech Steps 3-6 (competitor comparison, qualitative deep dive, valuation, decision scoring). Receives an industry cluster of 1-4 stocks and returns a fully scored analysis. Examples:
+description: |
+  Use this agent for deep analysis of stock candidates through EdenFinTech Steps 3-6 (competitor comparison, qualitative deep dive, valuation, decision scoring). Receives an industry cluster of 1-4 stocks and returns a fully scored analysis.
 
-<example>
-Context: Screener returned survivors, orchestrator needs deep analysis
-user: "Analyze this auto parts cluster: CPS, AAP, DORM"
-assistant: "I'll use the analyst agent to run Steps 3-6 on the auto parts cluster"
-<commentary>
-Analyst receives a cluster and runs the full qualitative + valuation pipeline.
-</commentary>
-</example>
-
+  <example>
+  Context: Screener returned survivors, orchestrator needs deep analysis
+  user: "Analyze this auto parts cluster: CPS, AAP, DORM"
+  assistant: "I'll use the analyst agent to run Steps 3-6 on the auto parts cluster"
+  <commentary>
+  Analyst receives a cluster and runs the full qualitative + valuation pipeline.
+  </commentary>
+  </example>
 model: inherit
 color: green
 tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch"]

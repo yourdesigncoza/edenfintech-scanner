@@ -1,25 +1,25 @@
 ---
 name: edenfintech-screener
-description: Use this agent when screening NYSE stocks through the EdenFinTech quantitative filters (Steps 1-2). This agent applies broken-chart detection, industry exclusions, and 5-check first filter (solvency, dilution, revenue growth, ROIC, valuation). Examples:
+description: |
+  Use this agent when screening NYSE stocks through the EdenFinTech quantitative filters (Steps 1-2). This agent applies broken-chart detection, industry exclusions, and 5-check first filter (solvency, dilution, revenue growth, ROIC, valuation).
 
-<example>
-Context: Orchestrator needs to screen NYSE for turnaround candidates
-user: "Run Phase 1 screening on NYSE consumer staples stocks"
-assistant: "I'll use the screener agent to filter consumer staples stocks through Steps 1-2"
-<commentary>
-The screener handles all quantitative filtering before deep analysis begins.
-</commentary>
-</example>
+  <example>
+  Context: Orchestrator needs to screen NYSE for turnaround candidates
+  user: "Run Phase 1 screening on NYSE consumer staples stocks"
+  assistant: "I'll use the screener agent to filter consumer staples stocks through Steps 1-2"
+  <commentary>
+  The screener handles all quantitative filtering before deep analysis begins.
+  </commentary>
+  </example>
 
-<example>
-Context: Full NYSE scan requested
-user: "Screen all NYSE stocks for EdenFinTech candidates"
-assistant: "I'll use the screener agent to run the full quantitative filter pipeline"
-<commentary>
-Full scan — screener pulls NYSE universe and applies all hard filters.
-</commentary>
-</example>
-
+  <example>
+  Context: Full NYSE scan requested
+  user: "Screen all NYSE stocks for EdenFinTech candidates"
+  assistant: "I'll use the screener agent to run the full quantitative filter pipeline"
+  <commentary>
+  Full scan — screener pulls NYSE universe and applies all hard filters.
+  </commentary>
+  </example>
 model: inherit
 color: cyan
 tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch"]

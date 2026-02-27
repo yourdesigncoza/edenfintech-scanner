@@ -1,25 +1,25 @@
 ---
 name: edenfintech-orchestrator
-description: Use this agent to orchestrate a full EdenFinTech stock scan. Coordinates the screener (Phase 1) and analyst agents (Phase 2), then compiles the final ranked report. Examples:
+description: |
+  Use this agent to orchestrate a full EdenFinTech stock scan. Coordinates the screener (Phase 1) and analyst agents (Phase 2), then compiles the final ranked report.
 
-<example>
-Context: User wants to scan for stock candidates
-user: "Scan NYSE for turnaround candidates"
-assistant: "I'll use the orchestrator to coordinate a full scan"
-<commentary>
-The orchestrator manages the two-phase pipeline and produces the final report.
-</commentary>
-</example>
+  <example>
+  Context: User wants to scan for stock candidates
+  user: "Scan NYSE for turnaround candidates"
+  assistant: "I'll use the orchestrator to coordinate a full scan"
+  <commentary>
+  The orchestrator manages the two-phase pipeline and produces the final report.
+  </commentary>
+  </example>
 
-<example>
-Context: User wants a sector-focused scan
-user: "Find deep value stocks in consumer staples"
-assistant: "I'll use the orchestrator to run a sector-focused scan on consumer staples"
-<commentary>
-Orchestrator passes sector focus to screener, then deep-dives survivors.
-</commentary>
-</example>
-
+  <example>
+  Context: User wants a sector-focused scan
+  user: "Find deep value stocks in consumer staples"
+  assistant: "I'll use the orchestrator to run a sector-focused scan on consumer staples"
+  <commentary>
+  Orchestrator passes sector focus to screener, then deep-dives survivors.
+  </commentary>
+  </example>
 model: inherit
 color: yellow
 tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch", "Task"]

@@ -36,6 +36,11 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh <command> [args...]
 
 Available commands: screener, profile, income, balance, cashflow, ratios, metrics, price-history, ev, peers, sbc, shares, screen-data, list-nyse
 
+Data is cached automatically. Use `--fresh` flag to bypass cache and fetch live data:
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh --fresh profile TICKER
+```
+
 ## Your Process
 
 ### Phase 1A: Build Universe

@@ -159,10 +159,52 @@ Once all analysts return:
 Write the report to: ${CLAUDE_PLUGIN_ROOT}/docs/scans/{YYYY-MM-DD}-scan-report.md
 ```
 
-Also save a copy to the strategy project if available:
+Also save a copy to the data directory and strategy project if available:
 ```bash
+# Get data directory path
+DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
+# Save to data dir scans folder
+mkdir -p "$DATA_DIR/scans" && copy report there too.
+# Save to strategy project if it exists
 If /home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/ exists, copy there too.
 ```
+
+### 5b. Risk Factor Enrichment (manual approval required)
+
+**This step requires explicit user approval before proceeding.**
+
+If `MASSIVE_API_KEY` is not configured or command returns `SKIP`, skip this step entirely.
+
+1. **Present shortlist and pause.** Show the user the ranked candidates and ask:
+   "These are the top candidates. Would you like me to hydrate them with
+   Massive.com 10-K risk factor data? (5 req/min free tier)"
+
+2. **Safeguard**: If the shortlist exceeds 10 candidates, HALT and flag:
+   "Shortlist has {n} candidates — filtering criteria may need tightening.
+   Recommend narrowing to 2-4 before hydrating."
+
+3. **Only after user approves**, fetch risk factors for approved tickers:
+   ```bash
+   bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh risk-factors TICKER
+   ```
+
+4. For each hydrated candidate, analyze:
+   - **Moat threats**: risks that could erode competitive advantages
+   - **Catalyst blockers**: disclosed headwinds that could delay/block identified catalysts
+   - **Unaddressed risks**: material risks with no corresponding management action plan
+   - **Worst-case inputs**: risks that inform downside scenario assumptions
+
+5. Add a "Risk Factor Review" subsection to each hydrated candidate in the report:
+   ```markdown
+   **10-K Risk Factors** (via Massive.com):
+   - Key risks: {2-3 most material risk categories with supporting text}
+   - Catalyst conflicts: {any disclosed risk that threatens an identified catalyst}
+   - Unaddressed: {material risks not covered by management's stated fixes}
+   ```
+
+6. If risk factors reveal a catalyst-blocking risk not previously considered,
+   note it but do NOT re-score — the score reflects pre-enrichment analysis.
+   Flag for manual review instead.
 
 ### 6. Present Summary
 

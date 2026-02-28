@@ -40,7 +40,7 @@ Data flows between agents via Task tool prompt/response — the orchestrator pas
 bash scripts/fmp-api.sh <command> [args...]
 ```
 
-Commands: `screener`, `profile`, `income`, `balance`, `cashflow`, `ratios`, `metrics`, `price-history`, `ev`, `peers`, `sbc`, `shares`, `screen-data`, `list-nyse`.
+Commands: `screener`, `profile`, `income`, `balance`, `cashflow`, `ratios`, `metrics`, `price-history`, `ev`, `peers`, `sbc`, `shares`, `screen-data`, `list-nyse`, `risk-factors`.
 
 Rate limit awareness:
 - `screen-data` makes **3 API calls** per ticker (profile + metrics + ratios) — budget accordingly.
@@ -70,6 +70,35 @@ bash scripts/fmp-api.sh profile CPS
 - `knowledge/scoring-formulas.md` — Decision scoring math, position sizing breakpoints, deployment scenarios.
 - `knowledge/strategy-rules.md` — Complete 8-step strategy reference. Source of truth for all agent behavior.
 - `knowledge/valuation-guidelines.md` — FCF multiple baselines by industry, heroic assumptions test, simplicity principle.
+
+## Caching
+
+All FMP API calls are transparently cached to `$SCANNER_DATA_DIR/cache/` (default: separate git repo at `/home/laudes/zoot/projects/edenfintech-scanner-data/`). Same interface, no agent changes needed.
+
+**Cache structure:** `cache/<command>/<TICKER>.json` (screener uses `<exchange>[-<sector>].json`)
+
+**TTLs:** screener/ratios/metrics/ev = 7d, profile/peers = 30d, income/balance/cashflow/risk-factors = 90d, price-history = 1d
+
+**Key behaviors:**
+- `--fresh` flag bypasses cache: `bash scripts/fmp-api.sh --fresh profile CPS`
+- `screen-data` shares cache with individual `profile`/`metrics`/`ratios` calls
+- `sbc` reuses `cashflow` cache, `shares` reuses `ev` cache, `list-nyse` reuses `screener NYSE` cache
+- Empty/error responses are never cached
+
+**Cache management commands:**
+- `cache-status` — fresh/stale counts per command, total size
+- `cache-clear [command]` — wipe all or specific command cache
+- `data-dir` — echo data directory path
+
+## Massive.com Integration (Supplementary)
+
+SEC 10-K risk factor data via Massive.com, used as post-scan enrichment only:
+- `risk-factors TICKER` — Categorized risk disclosures (90d cache)
+- Requires `MASSIVE_API_KEY` in `.env` — get from https://massive.com/dashboard/api-keys
+- Free tier: 5 req/min — only called for top 2-4 candidates after ranking, with manual approval
+- Orchestrator pauses at Step 5b, presents shortlist, waits for user approval before hydrating
+- If shortlist > 10 candidates, halts and flags filtering needs tightening
+- If key not set, enrichment step is silently skipped
 
 ## Scoring Formula Quick Reference
 

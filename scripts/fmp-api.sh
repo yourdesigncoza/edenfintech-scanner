@@ -103,7 +103,7 @@ case "$cmd" in
     screener)
         exchange="${1:-NYSE}"
         sector="${2:-}"
-        url="$BASE/_company-screener_?exchange=$exchange&isActivelyTrading=true&apikey=$FMP_API_KEY"
+        url="$BASE/company-screener?exchange=$exchange&isActivelyTrading=true&apikey=$FMP_API_KEY"
         cache_key="$exchange"
         if [[ -n "$sector" ]]; then
             url="$url&sector=$(echo "$sector" | sed 's/ /%20/g')"
@@ -235,7 +235,7 @@ if isinstance(data, list):
     # List all NYSE stocks (reuses screener cache)
     # Usage: fmp-api.sh list-nyse
     list-nyse)
-        cached_fetch screener "NYSE" "$BASE/_company-screener_?exchange=NYSE&isActivelyTrading=true&limit=5000&apikey=$FMP_API_KEY"
+        cached_fetch screener "NYSE" "$BASE/company-screener?exchange=NYSE&isActivelyTrading=true&limit=5000&apikey=$FMP_API_KEY"
         ;;
 
     # Show cache status — fresh/stale counts, total size

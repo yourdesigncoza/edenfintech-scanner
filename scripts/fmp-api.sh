@@ -4,14 +4,18 @@
 
 set -euo pipefail
 
-# Load config — plugin root .env first (for SCANNER_DATA_DIR), then data dir .env (for API keys)
+# Load config — plugin root .env first, then persistent user config, then data dir .env (for API keys)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
 
 if [[ -f "$PLUGIN_ROOT/.env" ]]; then
     source "$PLUGIN_ROOT/.env"
 fi
-# Data dir .env survives plugin cache refreshes — preferred location for API keys
+# Persistent user config — survives plugin cache refreshes
+if [[ -z "${SCANNER_DATA_DIR:-}" && -f "$HOME/.config/edenfintech-scanner/.env" ]]; then
+    source "$HOME/.config/edenfintech-scanner/.env"
+fi
+# Data dir .env — preferred location for API keys
 DATA_DIR_ENV="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}/.env"
 if [[ -f "$DATA_DIR_ENV" ]]; then
     source "$DATA_DIR_ENV"
@@ -338,7 +342,7 @@ if isinstance(data, list):
         echo "Cache TTLs: screener/ratios/metrics/ev=7d, profile/peers=30d,"
         echo "            income/balance/cashflow/risk-factors=90d, price-history=1d"
         echo ""
-        echo "Config: Set SCANNER_DATA_DIR in $PLUGIN_ROOT/.env"
+        echo "Config: Set SCANNER_DATA_DIR in $PLUGIN_ROOT/.env or ~/.config/edenfintech-scanner/.env"
         echo "        Set FMP_API_KEY and MASSIVE_API_KEY in \$SCANNER_DATA_DIR/.env"
         ;;
 esac

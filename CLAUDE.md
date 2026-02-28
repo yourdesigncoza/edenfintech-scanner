@@ -29,7 +29,7 @@ Data flows between agents via Task tool prompt/response — the orchestrator pas
 ## Key Conventions
 
 - All agent/skill files use `${CLAUDE_PLUGIN_ROOT}` for paths — never hardcode absolute paths.
-- FMP API key lives in `.env` (not committed). Free tier: 250 req/day (sector scans). Paid tier needed for full NYSE scans.
+- API keys live in `$SCANNER_DATA_DIR/.env` (survives plugin cache refreshes). Plugin root `.env` only has `SCANNER_DATA_DIR`. Free tier: 250 req/day (sector scans). Paid tier needed for full NYSE scans.
 - Scan reports save to `docs/scans/{YYYY-MM-DD}-scan-report.md` and optionally to `/home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/`.
 - Strategy has hard rules that must never be bypassed: 30% CAGR hurdle, no-catalysts = pass, excluded industries list, 12-position max, 50% single-theme cap.
 - Agent YAML frontmatter defines tool permissions: orchestrator has `Task`, screener/analyst do not. All agents have `Bash`, `Read`, `Write`, `Grep`, `Glob`, `WebSearch`, `WebFetch`.

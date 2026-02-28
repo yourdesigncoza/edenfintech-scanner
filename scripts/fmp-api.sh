@@ -4,16 +4,22 @@
 
 set -euo pipefail
 
-# Load config
+# Load config — plugin root .env first (for SCANNER_DATA_DIR), then data dir .env (for API keys)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
 
 if [[ -f "$PLUGIN_ROOT/.env" ]]; then
     source "$PLUGIN_ROOT/.env"
 fi
+# Data dir .env survives plugin cache refreshes — preferred location for API keys
+DATA_DIR_ENV="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}/.env"
+if [[ -f "$DATA_DIR_ENV" ]]; then
+    source "$DATA_DIR_ENV"
+fi
 
 if [[ -z "${FMP_API_KEY:-}" || "$FMP_API_KEY" == "your_api_key_here" ]]; then
-    echo "ERROR: FMP_API_KEY not set. Edit $PLUGIN_ROOT/.env with your API key."
+    echo "ERROR: FMP_API_KEY not set."
+    echo "Add your API keys to: ${SCANNER_DATA_DIR:-.}/.env (preferred) or $PLUGIN_ROOT/.env"
     echo "Get a key at: https://financialmodelingprep.com/developer/docs/"
     exit 1
 fi
@@ -332,6 +338,7 @@ if isinstance(data, list):
         echo "Cache TTLs: screener/ratios/metrics/ev=7d, profile/peers=30d,"
         echo "            income/balance/cashflow/risk-factors=90d, price-history=1d"
         echo ""
-        echo "Config: Set FMP_API_KEY, MASSIVE_API_KEY, and SCANNER_DATA_DIR in $PLUGIN_ROOT/.env"
+        echo "Config: Set SCANNER_DATA_DIR in $PLUGIN_ROOT/.env"
+        echo "        Set FMP_API_KEY and MASSIVE_API_KEY in \$SCANNER_DATA_DIR/.env"
         ;;
 esac

@@ -61,6 +61,54 @@ These ceilings cap the analyst's probability estimate BEFORE scoring. If the ana
 
 Note: Negative equity resulting from spinoff leverage (e.g., BRBR from Post Holdings) or deliberate recapitalization does NOT trigger the 60% ceiling — only negative equity from operating deterioration.
 
+### Probability Confidence Score (PCS)
+
+Assessed by the **Epistemic Reviewer agent** independently — the reviewer never sees the analyst's probability estimate or score. This prevents self-assessment bias.
+
+**5-Question Checklist** (count "No" answers):
+
+| # | Question | "Yes" = modelable/low uncertainty | "No" = hard to model/high uncertainty |
+|---|----------|-----------------------------------|---------------------------------------|
+| 1 | Is risk primarily operational (modelable)? | Normal business execution risk | Regulatory, legal, or existential risk dominates |
+| 2 | Is regulatory discretion minimal? | Predictable regulatory environment | Outcome depends on discretionary regulatory action |
+| 3 | Are there historical precedents? | Similar turnarounds have played out before | No comparable precedent exists |
+| 4 | Is outcome non-binary? | Gradient of outcomes possible | Success/failure with little middle ground |
+| 5 | Is macro/geopolitical exposure limited? | Primarily domestic/micro factors | Material exposure to macro, FX, or geopolitical risk |
+
+**Confidence Score Mapping:**
+
+| "No" Count | Confidence | Multiplier |
+|------------|------------|------------|
+| 0 | 5 | x1.00 |
+| 1 | 4 | x0.95 |
+| 2 | 3 | x0.85 |
+| 3 | 2 | x0.70 |
+| 4-5 | 1 | x0.50 |
+
+**Formula:**
+```
+effective_probability = base_probability * multiplier
+```
+
+Use `effective_probability` (not base) in the scoring formula AND hard breakpoint checks (e.g., probability < 60% = size 0%).
+
+**Confidence-Based Size Cap** (Layer 3 — applied AFTER score-to-size mapping):
+
+| Confidence | Max Position Size |
+|------------|-------------------|
+| 5 | No cap (score matrix applies) |
+| 4 | 12% max |
+| 3 | 8% max |
+| 2 | 5% max |
+| 1 | 0% (watchlist only) |
+
+```
+final_size = min(score_based_size, confidence_cap, downside_cap)
+```
+
+**Binary Outcome Override:**
+If question 4 ("Is outcome non-binary?") = **No** AND confidence ≤ 3 → max 5% regardless of score.
+
 ### Score-to-Position-Size Mapping
 
 The decision score directly dictates the maximum position size for new capital:

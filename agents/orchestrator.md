@@ -87,15 +87,72 @@ For each scored candidate, also provide a Structural Diagnosis:
 - What specific event or condition would upgrade the score to 70+?
 - What specific event would break the thesis entirely?
 
+For each scored candidate, also provide an Epistemic Input section (required for confidence review):
+- Thesis: 2-3 sentence summary of the turnaround opportunity
+- Key Risks: bulleted list of primary risks
+- Catalysts: bulleted list with timelines
+- Moat Summary: 1-2 sentence moat assessment
+This section must NOT include the probability estimate or decision score.
+
 Return the complete cluster analysis with scored candidates."
 ```
 
 Launch ALL clusters in parallel using multiple Task tool calls in a single message.
 Wait for all analyst results.
 
+### 4a. Epistemic Confidence Review
+
+After collecting all analyst results, before the consistency audit:
+
+1. **Extract epistemic input** for each scored candidate from analyst output:
+   - Ticker, industry, thesis summary, risk factors, catalysts, moat assessment
+   - **Strip probability estimate and decision score** — the epistemic reviewer must NOT see these
+
+2. **Spawn the epistemic reviewer agent** via Task tool:
+
+```
+Use the Task tool to launch a general-purpose agent with this prompt:
+
+"You are running the EdenFinTech Epistemic Reviewer. Read the agent instructions at
+${CLAUDE_PLUGIN_ROOT}/agents/epistemic-reviewer.md and follow them exactly.
+
+Assess epistemic confidence for these candidates:
+
+{For each candidate:}
+### {TICKER} — {Industry}
+- Thesis: {2-3 sentence summary from analyst's Epistemic Input section}
+- Key Risks: {risk list}
+- Catalysts: {catalyst list with timelines}
+- Moat Assessment: {moat summary}
+
+Return the structured confidence assessment for all candidates."
+```
+
+3. **Receive confidence scores** and apply to each candidate:
+
+4. **Compute effective probability** for each candidate:
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh effective-prob {base_probability} {confidence}
+```
+
+5. **Filter on effective probability**: If effective probability < 60% → move candidate to "Rejected at Analysis" with reason: "epistemic confidence filter (base {base}% x {multiplier} = {effective}%, below 60% threshold)"
+
+6. **Recompute decision score** using effective probability:
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} {base_probability} {cagr} {confidence}
+```
+
+7. **Recompute position size** with confidence cap:
+```bash
+# If analyst's Q4 (non-binary) was "No", add binary flag
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh size {new_score} {cagr} {effective_probability} {downside} {confidence} [binary]
+```
+
+8. **Apply binary outcome override**: If Q4 = No AND confidence ≤ 3 → cap at 5% regardless of score
+
 ### 4b. Multiple Consistency Audit
 
-After collecting all analyst results, before ranking:
+After the epistemic review, before ranking:
 
 1. Extract the FCF multiple used for each scored candidate
 2. Calculate the scan's median FCF multiple
@@ -161,6 +218,16 @@ Once all analysts return:
 - **Suggested size:** {n}% | **Confidence flags:** {list}
 - **Decision Score:** Downside {n}% (adj {n}) × 0.45 = {n} + Probability {n}% × 0.40 = {n} + CAGR {n}% × 0.15 = {n} = **{score}**
   {If ceiling applied: "Ceiling: {condition} → capped at {n}%"}
+- **Epistemic Confidence:** {n}/5 ({n} "No" answers)
+  - Operational risk: {Yes/No} — {1-line justification}
+  - Regulatory discretion: {Yes/No} — {1-line}
+  - Historical precedent: {Yes/No} — {1-line}
+  - Non-binary outcome: {Yes/No} — {1-line}
+  - Macro/geo limited: {Yes/No} — {1-line}
+  - Effective probability: {base}% x {multiplier} = {effective}%
+  {If confidence cap applies: "Confidence cap: {n}%"}
+  {If binary override applies: "Binary outcome override: max 5%"}
+  {If human judgment flags: "Human review: {flag}"}
 - **Probability Sensitivity:**
   | Probability | Score | Size Band |
   |-------------|-------|-----------|
@@ -193,6 +260,7 @@ Once all analysts return:
 - Catalyst timelines are estimates based on public information as of scan date
 - Valuation multiples verified via consistency audit (median multiple: {n}x, max deviation: {n}x)
 - All scoring math computed via calc-score.sh (deterministic, not LLM-generated)
+- Epistemic confidence assessed independently — reviewer never sees analyst probability or score
 
 ---
 *Scan completed {YYYY-MM-DD} using EdenFinTech deep value turnaround methodology*

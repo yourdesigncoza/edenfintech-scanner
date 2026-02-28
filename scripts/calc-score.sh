@@ -15,8 +15,9 @@ EdenFinTech Scanner — Decision Score Calculator
 Usage: bash calc-score.sh <command> [args...]
 
 Commands:
-  score <downside_pct> <probability_pct> <cagr_pct>
+  score <downside_pct> <probability_pct> <cagr_pct> [confidence]
       Calculate decision score using the adjusted downside penalty curve.
+      If confidence (1-5) provided, applies PCS multiplier to probability first.
 
   cagr <current_price> <target_price> <years>
       Calculate CAGR and check against 30% hurdle rate.
@@ -24,17 +25,27 @@ Commands:
   valuation <revenue_billions> <fcf_margin_pct> <multiple> <shares_millions>
       Calculate target price from revenue, FCF margin, multiple, and share count.
 
-  size <score> <cagr_pct> <probability_pct> <downside_pct>
+  size <score> <cagr_pct> <probability_pct> <downside_pct> [confidence] [binary_flag]
       Determine max position size with all hard breakpoints applied.
+      If confidence (1-5) provided, applies confidence-based size cap.
+      If binary_flag is "binary", applies binary outcome override (max 5% if confidence <= 3).
+
+  effective-prob <base_probability_pct> <confidence>
+      Apply PCS multiplier to base probability. Returns effective probability.
+      Confidence must be 1-5.
 
   help
       Show this help text.
 
 Examples:
   bash calc-score.sh score 30 65 39
+  bash calc-score.sh score 30 65 39 3          # with confidence multiplier
   bash calc-score.sh cagr 227 607 3
   bash calc-score.sh valuation 2.3 12.0 22 10.0
   bash calc-score.sh size 63.3 39 65 30
+  bash calc-score.sh size 63.3 39 65 30 3      # with confidence cap
+  bash calc-score.sh size 63.3 39 65 30 3 binary  # with binary override
+  bash calc-score.sh effective-prob 65 3        # → 55.25%
 EOF
 }
 
@@ -50,20 +61,62 @@ validate_number() {
     fi
 }
 
+PCS_MULTIPLIER_PY='
+def pcs_multiplier(confidence):
+    table = {5: 1.00, 4: 0.95, 3: 0.85, 2: 0.70, 1: 0.50}
+    c = int(confidence)
+    if c < 1 or c > 5:
+        raise ValueError(f"confidence must be 1-5, got: {c}")
+    return table[c]
+'
+
 case "$cmd" in
 
-score)
-    [[ $# -eq 3 ]] || err "score requires 3 args: <downside_pct> <probability_pct> <cagr_pct>"
-    validate_number "downside_pct" "$1"
-    validate_number "probability_pct" "$2"
-    validate_number "cagr_pct" "$3"
+effective-prob)
+    [[ $# -eq 2 ]] || err "effective-prob requires 2 args: <base_probability_pct> <confidence>"
+    validate_number "base_probability_pct" "$1"
+    validate_number "confidence" "$2"
 
     python3 -c "
 import json
+${PCS_MULTIPLIER_PY}
+
+base = float('$1')
+confidence = int(float('$2'))
+mult = pcs_multiplier(confidence)
+effective = round(base * mult, 2)
+
+print(json.dumps({
+    'base_probability': base,
+    'confidence': confidence,
+    'multiplier': mult,
+    'effective_probability': effective
+}, indent=2))
+"
+    ;;
+
+score)
+    [[ $# -ge 3 && $# -le 4 ]] || err "score requires 3-4 args: <downside_pct> <probability_pct> <cagr_pct> [confidence]"
+    validate_number "downside_pct" "$1"
+    validate_number "probability_pct" "$2"
+    validate_number "cagr_pct" "$3"
+    [[ $# -ge 4 ]] && validate_number "confidence" "$4"
+
+    python3 -c "
+import json
+${PCS_MULTIPLIER_PY}
 
 downside = float('$1')
-probability = float('$2')
+base_probability = float('$2')
 cagr = float('$3')
+confidence = int(float('${4:-0}')) if '${4:-}' else None
+
+if confidence is not None:
+    mult = pcs_multiplier(confidence)
+    probability = round(base_probability * mult, 2)
+else:
+    mult = None
+    probability = base_probability
 
 adjusted_downside = round(downside * (1 + (downside / 100) * 0.5), 2)
 risk_component = round((100 - adjusted_downside) * 0.45, 2)
@@ -71,14 +124,21 @@ probability_component = round(probability * 0.40, 2)
 return_component = round(min(cagr, 100) * 0.15, 2)
 total_score = round(risk_component + probability_component + return_component, 2)
 
-print(json.dumps({
+result = {
     'downside_pct': downside,
     'adjusted_downside': adjusted_downside,
     'risk_component': risk_component,
     'probability_component': probability_component,
     'return_component': return_component,
     'total_score': total_score
-}, indent=2))
+}
+if confidence is not None:
+    result['base_probability'] = base_probability
+    result['confidence'] = confidence
+    result['multiplier'] = mult
+    result['effective_probability'] = probability
+
+print(json.dumps(result, indent=2))
 "
     ;;
 
@@ -150,11 +210,12 @@ print(json.dumps({
     ;;
 
 size)
-    [[ $# -eq 4 ]] || err "size requires 4 args: <score> <cagr_pct> <probability_pct> <downside_pct>"
+    [[ $# -ge 4 && $# -le 6 ]] || err "size requires 4-6 args: <score> <cagr_pct> <probability_pct> <downside_pct> [confidence] [binary]"
     validate_number "score" "$1"
     validate_number "cagr_pct" "$2"
     validate_number "probability_pct" "$3"
     validate_number "downside_pct" "$4"
+    [[ $# -ge 5 ]] && validate_number "confidence" "$5"
 
     python3 -c "
 import json
@@ -163,6 +224,8 @@ score = float('$1')
 cagr = float('$2')
 probability = float('$3')
 downside = float('$4')
+confidence = int(float('${5:-0}')) if '${5:-}' else None
+binary_flag = '${6:-}' == 'binary'
 
 # Score-based sizing
 if score >= 75:
@@ -198,24 +261,53 @@ elif downside >= 80:
     hard_cap = '5%'
     hard_reason = 'downside 80-99%'
 
-# Determine final size — lower of score-based and hard-breakpoint limits
-if hard_cap == '0%' or score_based_max == '0%':
+# Confidence-based size cap (Layer 3)
+confidence_cap = None
+confidence_cap_reason = None
+if confidence is not None:
+    cap_table = {5: None, 4: 12, 3: 8, 2: 5, 1: 0}
+    if confidence < 1 or confidence > 5:
+        raise ValueError(f'confidence must be 1-5, got: {confidence}')
+    cap_val = cap_table[confidence]
+    if cap_val is not None:
+        confidence_cap = f'{cap_val}%'
+        confidence_cap_reason = f'confidence {confidence}/5 → max {cap_val}%'
+        if cap_val == 0:
+            confidence_cap_reason = f'confidence 1/5 → watchlist only'
+
+# Binary outcome override
+binary_override = None
+if binary_flag and confidence is not None and confidence <= 3:
+    binary_override = '5%'
+
+# Determine final size — lowest of all limits
+def parse_lower(size_str):
+    if size_str is None:
+        return 999
+    return int(size_str.split('-')[0].replace('%', ''))
+
+candidates = [
+    ('score', score_based_max),
+    ('hard_breakpoint', hard_cap),
+    ('confidence', confidence_cap),
+    ('binary_override', binary_override),
+]
+
+# Start with score-based
+if score_based_max == '0%' or (hard_cap and hard_cap == '0%') or (confidence_cap and confidence_cap == '0%'):
     final_max_size = '0%'
     investable = False
-elif hard_cap is not None:
-    # Parse the lower bound of score_based_max to compare
-    score_lower = int(score_based_max.split('-')[0].replace('%', ''))
-    hard_val = int(hard_cap.replace('%', ''))
-    if hard_val <= score_lower:
-        final_max_size = hard_cap
-    else:
-        final_max_size = score_based_max
-    investable = True
 else:
-    final_max_size = score_based_max
-    investable = score_based_max != '0%'
+    # Find the most restrictive non-None cap
+    active_caps = [(name, val) for name, val in candidates if val is not None]
+    if not active_caps:
+        final_max_size = score_based_max
+    else:
+        min_name, min_val = min(active_caps, key=lambda x: parse_lower(x[1]))
+        final_max_size = min_val
+    investable = final_max_size != '0%'
 
-print(json.dumps({
+result = {
     'score': score,
     'score_band': score_band,
     'score_based_max': score_based_max,
@@ -223,7 +315,16 @@ print(json.dumps({
     'hard_breakpoint_reason': hard_reason,
     'final_max_size': final_max_size,
     'investable': investable
-}, indent=2))
+}
+if confidence is not None:
+    result['confidence'] = confidence
+    result['confidence_cap'] = confidence_cap
+    result['confidence_cap_reason'] = confidence_cap_reason
+if binary_override is not None:
+    result['binary_override'] = binary_override
+    result['binary_override_reason'] = f'non-binary outcome + confidence {confidence}/5 ≤ 3 → max 5%'
+
+print(json.dumps(result, indent=2))
 "
     ;;
 

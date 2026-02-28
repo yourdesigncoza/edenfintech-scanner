@@ -274,6 +274,12 @@ Return results as structured markdown:
 **Recommended Position Size:** {n}%
 **Confidence Flags:** {list of flags}
 
+**Epistemic Input** (for independent confidence review):
+- **Thesis:** {2-3 sentence summary of the turnaround opportunity — what's broken and why it recovers}
+- **Key Risks:** {bulleted list of primary risks, separated from probability}
+- **Catalysts:** {bulleted list with timelines}
+- **Moat Summary:** {1-2 sentence moat assessment}
+
 (repeat for each stock in cluster)
 
 ### Cluster Summary

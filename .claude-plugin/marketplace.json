@@ -5,14 +5,14 @@
   },
   "metadata": {
     "description": "On-demand NYSE stock scanner using EdenFinTech deep value turnaround strategy",
-    "version": "0.3.2"
+    "version": "0.3.3"
   },
   "plugins": [
     {
       "name": "edenfintech-scanner",
       "source": "./",
       "description": "On-demand NYSE stock scanner using EdenFinTech deep value turnaround strategy. Multi-agent pipeline: screener filters NYSE stocks (60%+ off ATH, solvency, growth), analyst agents score survivors on valuation, catalysts, and moats. Outputs ranked reports with position sizing.",
-      "version": "0.3.2",
+      "version": "0.3.3",
       "category": "productivity",
       "tags": [
         "stocks",

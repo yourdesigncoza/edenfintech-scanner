@@ -13,7 +13,7 @@ A Claude Code plugin that implements an on-demand NYSE stock scanner using the E
     → orchestrator agent (coordinator)
         → screener agent (Phase 1: quantitative filtering, Steps 1-2)
         → analyst agents (Phase 2: deep analysis, Steps 3-6, one per industry cluster, parallel)
-    → final ranked report saved to docs/scans/
+    → final ranked report saved to $SCANNER_DATA_DIR/scans/ (+ docs/scans/)
 ```
 
 - **Skill** (`skills/scan-stocks/SKILL.md`): Entry point. Parses user input (full scan / sector / specific tickers), checks FMP API key, spawns orchestrator via Task tool with `subagent_type: "general-purpose"`.
@@ -30,7 +30,7 @@ Data flows between agents via Task tool prompt/response — the orchestrator pas
 
 - All agent/skill files use `${CLAUDE_PLUGIN_ROOT}` for paths — never hardcode absolute paths.
 - API keys live in `$SCANNER_DATA_DIR/.env` (survives plugin cache refreshes). Plugin root `.env` only has `SCANNER_DATA_DIR`. Free tier: 250 req/day (sector scans). Paid tier needed for full NYSE scans.
-- Scan reports save to `docs/scans/{YYYY-MM-DD}-scan-report.md` and optionally to `/home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/`.
+- Scan reports save to `$SCANNER_DATA_DIR/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md` (primary), with copies to `docs/scans/` and `/home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/`. Naming: `full-nyse`, `consumer-defensive`, or `CPS-BABA-HRL`.
 - Strategy has hard rules that must never be bypassed: 30% CAGR hurdle, no-catalysts = pass, excluded industries list, 12-position max, 50% single-theme cap.
 - Agent YAML frontmatter defines tool permissions: orchestrator has `Task`, screener/analyst do not. All agents have `Bash`, `Read`, `Write`, `Grep`, `Glob`, `WebSearch`, `WebFetch`.
 

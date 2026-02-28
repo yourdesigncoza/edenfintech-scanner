@@ -155,17 +155,26 @@ Once all analysts return:
 ```
 
 6. **Save the report**:
+
+**Filename convention**: `{YYYY-MM-DD}-{scan-type}-scan-report.md`
+- Full scan → `2026-02-28-full-nyse-scan-report.md`
+- Sector scan → `2026-02-28-consumer-defensive-scan-report.md`
+- Specific tickers → `2026-02-28-CPS-BABA-HRL-scan-report.md`
+
+The scan-type slug is lowercase, hyphenated, derived from the scan parameters.
+
+**Primary**: data directory (persists across plugin updates):
 ```bash
-Write the report to: ${CLAUDE_PLUGIN_ROOT}/docs/scans/{YYYY-MM-DD}-scan-report.md
+DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
+mkdir -p "$DATA_DIR/scans"
+# Write report to: $DATA_DIR/scans/{filename}
 ```
 
-Also save a copy to the data directory and strategy project if available:
+**Secondary copies** (if directories exist):
 ```bash
-# Get data directory path
-DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
-# Save to data dir scans folder
-mkdir -p "$DATA_DIR/scans" && copy report there too.
-# Save to strategy project if it exists
+# Plugin docs (for git tracking)
+mkdir -p ${CLAUDE_PLUGIN_ROOT}/docs/scans && copy report there.
+# Strategy project
 If /home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/ exists, copy there too.
 ```
 

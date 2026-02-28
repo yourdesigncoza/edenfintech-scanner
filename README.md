@@ -31,7 +31,7 @@ From Claude Code:
 /scan-stocks CPS BABA HRL          # specific ticker analysis (skips screening)
 ```
 
-Reports are saved to `docs/scans/{YYYY-MM-DD}-scan-report.md`.
+Reports are saved to `$SCANNER_DATA_DIR/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md`.
 
 ## How It Works
 

@@ -129,6 +129,31 @@ Revenue x FCF Margin x FCF Multiple / Shares Outstanding = Price Target
 - Does it make sense vs. peers?
 - If gut check fails, adjust or walk away
 
+## Step 5b: Risk Factor Enrichment Override Protocol
+
+Risk enrichment via 10-K filings may reveal risks invisible in financial statements. Scores are NEVER revised post-enrichment, but candidate ranking may be adjusted.
+
+### Demotion Triggers
+
+A candidate MAY be demoted in the final ranking if enrichment reveals ANY of:
+1. **Customer concentration** > 70% of revenue in 3 or fewer accounts
+2. **Structural demand destruction** — technology substitution, regulatory ban, or demographic shift that permanently shrinks the addressable market
+3. **Previously unidentified kill-level risk** with no disclosed management mitigation plan
+4. **Supply chain single point of failure** that directly threatens an identified catalyst
+
+### Demotion Process
+1. Enrichment findings are documented in the report but scores remain unchanged
+2. If a demotion trigger is found, add a **DEMOTION** flag with the specific trigger and evidence
+3. Demoted candidates are ranked below all non-demoted candidates, regardless of score
+4. The next-highest non-demoted candidate fills any vacated deployment slot
+5. The demotion reason MUST appear in the Portfolio Impact section of the report
+
+### What Is NOT a Demotion Trigger
+- Risks already identified and reflected in the pre-enrichment analysis
+- Generic industry risks without company-specific evidence (e.g., "competition may increase")
+- Risks with clear, specific management mitigation plans disclosed in filings
+- Risks that confirm (rather than contradict) the existing thesis
+
 ## Step 6: Decision Scoring
 
 See `scoring-formulas.md` for the math.

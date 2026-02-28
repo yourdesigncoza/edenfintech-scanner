@@ -23,6 +23,26 @@ Reference for analyst agents when building the 4-input valuation model.
 - Elevated risks (regulatory, geopolitical, cyclical)
 - Deteriorating fundamentals (declining margins, rising debt, losing market share)
 
+### Discount Schedule
+
+Apply these discounts cumulatively from the industry baseline multiple:
+
+| Condition | Discount |
+|-----------|----------|
+| Revenue or volume declining 2+ consecutive years | -3x to -5x |
+| Above-average leverage vs peers (debt/equity > industry median) | -2x to -4x |
+| Regulatory, geopolitical, or structural risk | -2x to -3x |
+| Limited pricing power (commodity product, private label pressure) | -1x to -3x |
+| Secular industry headwind (not full decline — that fails Step 1) | -2x to -4x |
+
+Discounts are cumulative. Example: a Consumer Staples stock (baseline 25-28x) with declining revenue (-4x) and a secular headwind (-3x) starts at ~18-21x, not 22-25x.
+
+Always show the discount path in the analysis: baseline → each applicable discount → resulting multiple.
+
+### Consistency Rule
+
+Within a single scan, no candidate's FCF multiple may deviate by more than 5x from the scan's median multiple without explicit written justification in the valuation section. If the justification cannot be articulated in 2 sentences, the multiple is wrong — revise it.
+
 ## The Simplicity Principle
 
 > "I don't use complex models, and I don't believe you need them. An investable idea should be obvious."

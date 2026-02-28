@@ -88,6 +88,17 @@ Return the complete cluster analysis with scored candidates."
 Launch ALL clusters in parallel using multiple Task tool calls in a single message.
 Wait for all analyst results.
 
+### 4b. Multiple Consistency Audit
+
+After collecting all analyst results, before ranking:
+
+1. Extract the FCF multiple used for each scored candidate
+2. Calculate the scan's median FCF multiple
+3. Flag any candidate whose multiple deviates by more than 5x from the median
+4. For flagged candidates: check if the analyst's valuation section contains explicit discount path justification
+5. If no justification or justification is weak: move candidate to "Rejected at Analysis" with reason "valuation consistency check failed"
+6. If justification is strong: add `valuation_subjective` confidence flag and proceed
+
 ### 5. Compile Final Report
 
 Once all analysts return:
@@ -149,6 +160,8 @@ Once all analysts return:
 - Qualitative assessments (moats, management, probability) are LLM estimates — review critically
 - Valuation multiples involve judgment — verify reasoning matches your own assessment
 - Catalyst timelines are estimates based on public information as of scan date
+- Valuation multiples verified via consistency audit (median multiple: {n}x, max deviation: {n}x)
+- All scoring math computed via calc-score.sh (deterministic, not LLM-generated)
 
 ---
 *Scan completed {YYYY-MM-DD} using EdenFinTech deep value turnaround methodology*
@@ -214,6 +227,15 @@ If `MASSIVE_API_KEY` is not configured or command returns `SKIP`, skip this step
 6. If risk factors reveal a catalyst-blocking risk not previously considered,
    note it but do NOT re-score — the score reflects pre-enrichment analysis.
    Flag for manual review instead.
+
+7. **Apply Enrichment Override Protocol** (see strategy-rules.md Step 5b):
+   - Check each enriched candidate against demotion triggers:
+     a. Customer concentration > 70% in 3 or fewer accounts
+     b. Structural demand destruction (tech substitution, regulatory ban, demographic shift)
+     c. Previously unidentified kill-level risk with no management mitigation
+     d. Supply chain single point of failure threatening an identified catalyst
+   - If triggered: add DEMOTION flag, rank below all non-demoted candidates
+   - Document the specific demotion reason in Portfolio Impact section
 
 ### 6. Present Summary
 

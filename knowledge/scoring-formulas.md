@@ -49,6 +49,18 @@ Used to determine how much capital goes into each position.
 | Downside risk of 80-99% | Position capped at 5% |
 | Downside risk of 100% (total loss possible) | Position capped at 3% |
 
+### Probability Ceilings
+
+These ceilings cap the analyst's probability estimate BEFORE scoring. If the analyst's estimate exceeds a ceiling, use the ceiling value and note which ceiling was applied.
+
+| Condition | Max Probability | Rationale |
+|-----------|----------------|-----------|
+| Revenue or volume declined 3+ consecutive years | 65% | Persistent decline signals structural uncertainty regardless of narrative |
+| Negative equity (not from spinoff/restructuring leverage) | 60% | Genuine solvency concern caps confidence |
+| CEO tenure < 1 year at time of analysis | 65% | Insufficient track record at current company |
+
+Note: Negative equity resulting from spinoff leverage (e.g., BRBR from Post Holdings) or deliberate recapitalization does NOT trigger the 60% ceiling — only negative equity from operating deterioration.
+
 ### Score-to-Position-Size Mapping
 
 The decision score directly dictates the maximum position size for new capital:

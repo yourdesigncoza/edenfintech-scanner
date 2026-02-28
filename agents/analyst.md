@@ -122,6 +122,11 @@ For each surviving stock, build the 4-input valuation model:
   - China/geopolitical: apply discount
 - Adjust UP for: above-average quality (ROIC + moats), faster growth, improving fundamentals
 - Adjust DOWN for: above-average leverage, elevated risks, deteriorating fundamentals
+- **Apply the Discount Schedule** from valuation-guidelines.md. Show the discount path explicitly:
+  1. Start with industry baseline (e.g., Consumer Staples = 25-28x)
+  2. List each applicable discount condition and amount
+  3. Sum discounts and subtract from baseline to get final multiple
+  Example: "Baseline 25x → declining revenue -4x → secular headwind -3x → **18x**"
 
 **Input 4: Shares Outstanding**
 - Current share count
@@ -165,18 +170,33 @@ CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 
 Read `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md` for exact math.
 
+**Probability Ceiling Check (MANDATORY before scoring):**
+Before estimating probability, check the probability ceilings in scoring-formulas.md.
+If your estimate exceeds a ceiling, use the ceiling value and note: "Ceiling applied: [condition] → capped at [X]%"
+
+**Use the calculator for ALL math in Steps 5-6:**
+```bash
+# Calculate target price
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh valuation <revenue_B> <margin_pct> <multiple> <shares_M>
+
+# Calculate CAGR
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh cagr <current_price> <target_price> <years>
+
+# Calculate decision score
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score <downside_pct> <probability_pct> <cagr_pct>
+
+# Determine position size
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh size <score> <cagr_pct> <probability_pct> <downside_pct>
+```
+Show the command AND its JSON output in your analysis. This ensures deterministic, verifiable math.
+
 For each surviving stock:
 
 1. **Estimate downside %** (from worst case in Step 5)
-2. **Estimate base case probability** (0-100%, based on catalyst strength, management quality, balance sheet)
-3. **Calculate CAGR** (from Step 5)
-4. **Apply scoring formula:**
-   ```
-   adjusted_downside = downside_pct * (1 + (downside_pct / 100) * 0.5)
-   Score = (100 - adjusted_downside) * 0.45 + probability * 0.40 + min(cagr, 100) * 0.15
-   ```
-5. **Calculate recommended position size** using sizing weights (50/35/15)
-6. **Apply hard caps**: 80-99% downside = max 5%, 100% = max 3%
+2. **Estimate base case probability** (0-100%, based on catalyst strength, management quality, balance sheet) — apply probability ceilings first
+3. **Calculate CAGR** using `calc-score.sh cagr`
+4. **Calculate decision score** using `calc-score.sh score`
+5. **Determine position size** using `calc-score.sh size`
 
 **SCORING DISCIPLINE (NON-NEGOTIABLE):**
 - Estimate your 3 inputs ONCE: downside %, probability %, base case CAGR %

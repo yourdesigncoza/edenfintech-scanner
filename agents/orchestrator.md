@@ -82,6 +82,11 @@ Analyze this industry cluster: {cluster_name}
 Stocks: {TICK1, TICK2, TICK3}
 Screener flags: {any flags from Phase 1}
 
+For each scored candidate, also provide a Structural Diagnosis:
+- Role: Driver (high conviction, big position) / Filler (decent, small position) / Watchlist (not ready)
+- What specific event or condition would upgrade the score to 70+?
+- What specific event would break the thesis entirely?
+
 Return the complete cluster analysis with scored candidates."
 ```
 
@@ -104,6 +109,17 @@ After collecting all analyst results, before ranking:
 Once all analysts return:
 
 1. **Collect all scored candidates** from all clusters
+1b. **Compute Probability Sensitivity** for each candidate using calc-score.sh:
+    ```bash
+    # For each candidate, run score at 55%, 60%, 65%, 70%, 75% probability
+    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 55 {cagr}
+    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 60 {cagr}
+    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 65 {cagr}
+    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 70 {cagr}
+    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 75 {cagr}
+    # Use the candidate's actual downside and CAGR; only probability varies
+    # Map each score to its size band (and note "0% — fails hard cap" for prob < 60%)
+    ```
 2. **Rank by decision score** (highest first)
 3. **Filter out**: any stock with score implying CAGR < 30% or probability < 60%
 3b. **Hard Rule Audit** — Before ranking, move to "Rejected at Analysis" any stock where:
@@ -134,14 +150,29 @@ Once all analysts return:
 
 ## Ranked Candidates
 
-### 1. {TICKER} — Score: {n} | CAGR: {n}% | Downside: {n}%
+### 1. {TICKER} — Score: {n} | CAGR: {n}% | Downside: {n}% | Prob: {n}%
 - **Thesis:** {2-3 sentences on why this is a turnaround opportunity}
 - **Valuation:** Revenue ${n}B x FCF margin {n}% x {n}x = ${target} ({n}% CAGR over {n}yr)
+  - Discount path: Baseline {n}x → {each discount with reason} → **{n}x**
 - **Worst case:** ${floor} ({n}% loss)
 - **Moats:** {summary}
 - **Catalysts:** {list with timelines}
 - **Management:** {grade} — {1-line reasoning}
 - **Suggested size:** {n}% | **Confidence flags:** {list}
+- **Decision Score:** Downside {n}% (adj {n}) × 0.45 = {n} + Probability {n}% × 0.40 = {n} + CAGR {n}% × 0.15 = {n} = **{score}**
+  {If ceiling applied: "Ceiling: {condition} → capped at {n}%"}
+- **Probability Sensitivity:**
+  | Probability | Score | Size Band |
+  |-------------|-------|-----------|
+  | 55% | {calc} | {band or "0% — fails hard cap"} |
+  | 60% | {calc} | {band} |
+  | 65% | {calc} | {band} |
+  | 70% | {calc} | {band} |
+  | 75% | {calc} | {band} |
+- **Structural Diagnosis:**
+  - **Role:** {Driver / Filler / Watchlist}
+  - **What upgrades to 70+ score?** {specific event or condition}
+  - **What breaks the thesis?** {specific kill trigger}
 
 (repeat for each candidate, ranked by score)
 

@@ -109,6 +109,22 @@ final_size = min(score_based_size, confidence_cap, downside_cap)
 **Binary Outcome Override:**
 If question 4 ("Is outcome non-binary?") = **No** AND confidence ≤ 3 → max 5% regardless of score.
 
+### Risk-Type PCS Friction
+
+The analyst classifies each candidate's **dominant risk type**. Before computing effective probability, the orchestrator applies a friction modifier to the PCS confidence score. Friction makes confidence harder to achieve for structurally uncertain risk types.
+
+| Dominant Risk Type | Friction | Condition for Override |
+|--------------------|----------|----------------------|
+| Operational / Financial | 0 (default) | — |
+| Cyclical / Macro | -1 | Unless strong historical precedent (Q3 = Yes with named examples) |
+| Regulatory / Political | -1 to -2 | Unless clear regulatory precedent exists |
+| Legal / Investigation | -2 | Likely triggers binary flag (Q4 = No) |
+| Structural fragility (SPOF) | -1 | Also enables binary flag if not already set |
+
+**Application:** `adjusted_confidence = max(1, raw_confidence - friction)`. The adjusted confidence is used for the multiplier lookup and all downstream calculations (effective probability, size cap).
+
+**Friction does NOT stack with PCS answers** — it applies after the 5-question count. If Q1="No" already captures the regulatory risk, the friction is confirmatory, not additive. The orchestrator uses judgment: if the analyst's risk type clearly maps to PCS questions already answered "No", apply the lower end of friction ranges.
+
 ### Score-to-Position-Size Mapping
 
 The decision score directly dictates the maximum position size for new capital:

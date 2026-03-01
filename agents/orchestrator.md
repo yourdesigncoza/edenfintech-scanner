@@ -92,6 +92,7 @@ For each scored candidate, also provide an Epistemic Input section (required for
 - Key Risks: bulleted list of primary risks
 - Catalysts: bulleted list with timelines
 - Moat Summary: 1-2 sentence moat assessment
+- Dominant Risk Type: classify as Operational/Financial, Cyclical/Macro, Regulatory/Political, Legal/Investigation, or Structural fragility (SPOF)
 This section must NOT include the probability estimate or decision score.
 
 Return the complete cluster analysis with scored candidates."
@@ -128,12 +129,31 @@ Assess epistemic confidence for these candidates:
 Return the structured confidence assessment for all candidates."
 ```
 
-3. **Receive confidence scores** and apply to each candidate:
+3. **Receive confidence scores** and apply to each candidate.
+
+3b. **Apply risk-type friction** (see scoring-formulas.md "Risk-Type PCS Friction"):
+   - Read each candidate's `Dominant Risk Type` from the analyst's Epistemic Input
+   - Look up friction modifier from the table:
+     - Operational/Financial → 0
+     - Cyclical/Macro → -1 (unless Q3=Yes with named precedents → 0)
+     - Regulatory/Political → -1 to -2 (unless clear precedent → -1)
+     - Legal/Investigation → -2 (likely Q4=No already)
+     - Structural fragility (SPOF) → -1 (also set binary flag if not already set)
+   - Compute: `adjusted_confidence = max(1, raw_confidence - friction)`
+   - Use `adjusted_confidence` for all downstream calculations
+   - If friction is confirmatory (PCS answers already captured the risk), use the lower end of friction ranges
+   - Note the adjustment: "Risk-type friction: {type} → -{n} (raw {raw}/5 → adjusted {adj}/5)"
 
 4. **Compute effective probability** for each candidate:
 ```bash
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh effective-prob {base_probability} {confidence}
 ```
+
+4c. **Threshold-hugging detection**: Check if the analyst's base probability is within 2% of any hard cap:
+   - If base probability is 60-62% → flag: `threshold_proximity_warning: base {n}% is within 2% of 60% hard cap`
+   - If base probability is 65-67% and a probability ceiling applies (3yr+ decline, CEO <1yr) → flag: `threshold_proximity_warning: base {n}% is within 2% of {ceiling}% ceiling`
+   - If base probability is 60% exactly → flag: `threshold_proximity_warning: base probability AT the 60% hard cap — review for threshold anchoring`
+   - These are warnings only — they don't reject the candidate. They surface fragility for human scrutiny.
 
 5. **Filter on effective probability**: If effective probability < 60% → move candidate to "Rejected at Analysis" with reason: "epistemic confidence filter (base {base}% x {multiplier} = {effective}%, below 60% threshold)"
 
@@ -219,15 +239,17 @@ Once all analysts return:
 - **Decision Score:** Downside {n}% (adj {n}) × 0.45 = {n} + Probability {n}% × 0.40 = {n} + CAGR {n}% × 0.15 = {n} = **{score}**
   {If ceiling applied: "Ceiling: {condition} → capped at {n}%"}
 - **Epistemic Confidence:** {n}/5 ({n} "No" answers)
-  - Operational risk: {Yes/No} — {1-line justification}
-  - Regulatory discretion: {Yes/No} — {1-line}
-  - Historical precedent: {Yes/No} — {1-line}
-  - Non-binary outcome: {Yes/No} — {1-line}
-  - Macro/geo limited: {Yes/No} — {1-line}
+  - Operational risk: {Yes/No} — {1-line justification} — Evidence: {source}
+  - Regulatory discretion: {Yes/No} — {1-line} — Evidence: {source}
+  - Historical precedent: {Yes/No} — {1-line} — Evidence: {source}
+  - Non-binary outcome: {Yes/No} — {1-line} — Evidence: {source}
+  - Macro/geo limited: {Yes/No} — {1-line} — Evidence: {source}
+  {If risk-type friction applied: "Risk-type friction: {type} → -{n} (raw {raw}/5 → adjusted {adj}/5)"}
   - Effective probability: {base}% x {multiplier} = {effective}%
   {If confidence cap applies: "Confidence cap: {n}%"}
   {If binary override applies: "Binary outcome override: max 5%"}
   {If human judgment flags: "Human review: {flag}"}
+  {If threshold proximity: "**Threshold proximity warning**: base probability {n}% is within 2% of {cap}% ceiling"}
 - **Probability Sensitivity:**
   | Probability | Score | Size Band |
   |-------------|-------|-----------|
@@ -261,6 +283,9 @@ Once all analysts return:
 - Valuation multiples verified via consistency audit (median multiple: {n}x, max deviation: {n}x)
 - All scoring math computed via calc-score.sh (deterministic, not LLM-generated)
 - Epistemic confidence assessed independently — reviewer never sees analyst probability or score
+- PCS answers are evidence-anchored — each answer cites a source or declares NO_EVIDENCE
+- Risk-type friction applied to PCS confidence where applicable (see scoring-formulas.md)
+- Threshold proximity warnings flag base probabilities within 2% of hard caps
 
 ---
 *Scan completed {YYYY-MM-DD} using EdenFinTech deep value turnaround methodology*

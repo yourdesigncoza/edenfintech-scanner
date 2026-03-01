@@ -42,7 +42,11 @@ For each candidate:
 
 ### 1. Answer the 5-Question Checklist
 
-Answer each question Yes or No with a 1-line justification. Be specific — cite the actual risk or precedent.
+Answer each question Yes or No with:
+- A **1-line justification** citing the specific risk or precedent
+- An **evidence source** — the concrete data point grounding your answer
+
+**Evidence-anchoring rule:** Each answer MUST cite a specific evidence source (e.g., "10-K filing", "FMP balance sheet data", "WebSearch: CEO track record at prior company", "Analyst input: 3 catalysts with timelines") OR explicitly declare `NO_EVIDENCE` if you cannot ground the answer in observable data. This prevents "PCS laundering" — rationalizing confidence from narrative quality rather than actual evidence.
 
 | # | Question |
 |---|----------|
@@ -91,13 +95,13 @@ Return structured markdown for ALL candidates:
 
 ### {TICKER} — Confidence: {n}/5
 
-| # | Question | Answer | Justification |
-|---|----------|--------|---------------|
-| 1 | Operational risk? | {Yes/No} | {1-line specific justification} |
-| 2 | Regulatory discretion minimal? | {Yes/No} | {1-line} |
-| 3 | Historical precedent? | {Yes/No} | {1-line} |
-| 4 | Non-binary outcome? | {Yes/No} | {1-line} |
-| 5 | Macro/geo limited? | {Yes/No} | {1-line} |
+| # | Question | Answer | Justification | Evidence |
+|---|----------|--------|---------------|----------|
+| 1 | Operational risk? | {Yes/No} | {1-line specific justification} | {source or NO_EVIDENCE} |
+| 2 | Regulatory discretion minimal? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
+| 3 | Historical precedent? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
+| 4 | Non-binary outcome? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
+| 5 | Macro/geo limited? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
 
 **"No" count:** {n} → **Confidence: {score}/5** (multiplier: x{multiplier})
 {If question 4 = No AND confidence <= 3: "**Binary outcome override applies** — max 5% position"}
@@ -113,6 +117,7 @@ Return structured markdown for ALL candidates:
 
 - Answer ALL 5 questions for EVERY candidate. Do not skip questions or candidates.
 - Justifications must be specific — cite the actual risk, regulation, or precedent. "Various regulatory risks" is not acceptable.
+- Every answer MUST have an evidence source. `NO_EVIDENCE` is an honest, valid answer — rationalizing evidence from the thesis narrative is not. If you find yourself citing the thesis summary as your evidence, stop — that's circular.
 - When uncertain about a precedent, use WebSearch to check before answering Q3.
 - Do NOT speculate about probability, score, or position size — you don't have that data and shouldn't estimate it.
 - A confidence score of 1 is a valid outcome. Low confidence doesn't mean the stock is bad — it means the probability is hard to estimate reliably.

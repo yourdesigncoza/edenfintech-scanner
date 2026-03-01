@@ -21,6 +21,9 @@ A Claude Code plugin that implements an on-demand NYSE stock scanner using the E
 - **Screener** (`agents/screener.md`): Steps 1-2. Broken-chart detection (60%+ off ATH), industry exclusions, 5-check filter (solvency, dilution, revenue growth, ROIC, valuation). Should reduce thousands to 5-15 survivors. No Task tool — leaf agent.
 - **Analyst** (`agents/analyst.md`): Steps 3-6. Competitor comparison, qualitative deep dive (moats, management, catalysts), 4-input valuation model, decision scoring. Hard rule: no catalysts = automatic pass. No Task tool — leaf agent.
 - **Knowledge files** (`knowledge/`): Strategy rules, scoring formulas, excluded industries, current portfolio holdings, valuation guidelines. Agents read these at runtime via `${CLAUDE_PLUGIN_ROOT}/knowledge/`.
+- **Sector knowledge** (`knowledge/sectors/`): Per-sector hydrated knowledge files produced by `/sector-hydrate`. Sub-sector analysis, regulation, valuation approaches, evidence requirements. Registry at `_registry.md`.
+- **Sector Coordinator** (`agents/sector-coordinator.md`): Orchestrates sector hydration — discovers sub-sectors via FMP + Gemini, spawns parallel researchers, synthesizes output. Has Task tool.
+- **Sector Researcher** (`agents/sector-researcher.md`): Leaf agent for sector research. Runs 8 per-section Gemini deep research queries per sub-sector. No Task tool.
 - **FMP API script** (`scripts/fmp-api.sh`): Bash wrapper around Financial Modeling Prep **Stable API** (`https://financialmodelingprep.com/stable`). All data fetching goes through this.
 - **Plugin manifest** (`.claude-plugin/marketplace.json`): Plugin metadata for Claude Code plugin system.
 
@@ -61,6 +64,11 @@ bash scripts/fmp-api.sh profile CPS
 /scan-stocks                        # full NYSE scan
 /scan-stocks consumer staples       # sector-focused scan
 /scan-stocks CPS BABA HRL          # specific ticker analysis (skips screening)
+
+# Hydrate sector knowledge (requires Gemini MCP)
+/sector-hydrate Banking             # narrow: Diversified + Regional Banks
+/sector-hydrate Healthcare          # full sector
+/sector-hydrate "Consumer Defensive"
 ```
 
 ## Editing Knowledge Files

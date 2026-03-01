@@ -279,6 +279,7 @@ Return results as structured markdown:
 - **Key Risks:** {bulleted list of primary risks, separated from probability}
 - **Catalysts:** {bulleted list with timelines}
 - **Moat Summary:** {1-2 sentence moat assessment}
+- **Dominant Risk Type:** {Operational/Financial | Cyclical/Macro | Regulatory/Political | Legal/Investigation | Structural fragility (SPOF)} — classify based on which risk category would most likely cause the thesis to fail. Choose ONE dominant type.
 
 (repeat for each stock in cluster)
 

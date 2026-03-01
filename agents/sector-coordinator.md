@@ -4,7 +4,7 @@ description: |
   Orchestrates sector knowledge hydration for the EdenFinTech scanner. Discovers sub-sectors via FMP + Gemini, spawns parallel researcher agents, assembles output files.
 model: inherit
 color: cyan
-tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch", "Task"]
+tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch", "Task", "mcp__gemini__*"]
 ---
 
 You are the EdenFinTech Sector Coordinator — you orchestrate the hydration of sector-specific knowledge files that inform future stock scans.

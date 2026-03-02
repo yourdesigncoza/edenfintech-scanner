@@ -22,13 +22,23 @@ Parse the user's input to determine the sector:
 
 ## Prerequisites
 
-Verify Perplexity MCP is available — sector hydration relies on `perplexity_ask` for cited-fact retrieval:
+**HARD STOP** — Sector hydration relies entirely on `perplexity_ask`. Test it first before doing anything else:
 
 ```
-Use mcp__perplexity__perplexity_ask with messages: [{"role":"user","content":"test"}]
+Use mcp__perplexity__perplexity_ask with messages: [{"role":"user","content":"ping"}]
 ```
 
-If it fails, inform the user: Perplexity MCP must be configured (`PERPLEXITY_API_KEY` in MCP settings).
+**If the call fails, errors, or is denied for any reason:**
+
+STOP immediately. Do NOT resolve the sector, do NOT spawn agents, do NOT fall back to WebSearch.
+
+Alert the user with this exact message:
+
+> **BLOCKED: Perplexity MCP unavailable** — sector hydration cannot proceed.
+>
+> Fix: ensure `PERPLEXITY_API_KEY` is set in your MCP settings and the Perplexity server is listed in `.mcp.json`. Then re-run `/sector-hydrate`.
+
+Only continue to Sector Resolution if the `perplexity_ask` call returns a successful response.
 
 ## Sector Resolution
 

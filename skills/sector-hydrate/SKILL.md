@@ -10,7 +10,7 @@ version: 0.1.0
 
 # EdenFinTech Sector Hydration
 
-Build structured sector knowledge files for use in future scans. Uses Gemini deep research to produce per-sub-sector analysis covering metrics, valuation approaches, turnaround precedents, risk profiles, and evidence requirements.
+Build structured sector knowledge files for use in future scans. Uses Perplexity MCP (`perplexity_ask`) + Claude synthesis to produce per-sub-sector analysis covering metrics, valuation approaches, turnaround precedents, risk profiles, and evidence requirements.
 
 ## Invocation
 
@@ -22,13 +22,13 @@ Parse the user's input to determine the sector:
 
 ## Prerequisites
 
-Verify Gemini MCP is available — sector hydration relies on `gemini-deep-research` for primary research:
+Verify Perplexity MCP is available — sector hydration relies on `perplexity_ask` for cited-fact retrieval:
 
 ```
-Test by calling: mcp__gemini__gemini-query with prompt "test" and model "flash"
+Use mcp__perplexity__perplexity_ask with messages: [{"role":"user","content":"test"}]
 ```
 
-If Gemini is unavailable, inform the user that sector hydration requires the Gemini MCP server.
+If it fails, inform the user: Perplexity MCP must be configured (`PERPLEXITY_API_KEY` in MCP settings).
 
 ## Sector Resolution
 

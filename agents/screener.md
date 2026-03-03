@@ -41,6 +41,13 @@ Data is cached automatically. Use `--fresh` flag to bypass cache and fetch live 
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh --fresh profile TICKER
 ```
 
+## Reference Files
+
+Resolve knowledge path first:
+```bash
+KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+```
+
 ## Your Process
 
 ### Phase 1A: Build Universe
@@ -62,7 +69,7 @@ For each stock in the universe:
 
 1. **Broken Chart Check**: Get price history, calculate % off all-time high. **KEEP only stocks down 60%+ from ATH.**
 
-2. **Industry Exclusion**: Read `${CLAUDE_PLUGIN_ROOT}/knowledge/excluded-industries.md`. Cross-reference each stock's industry against the exclusion list. **REMOVE any matches.**
+2. **Industry Exclusion**: Read `$KNOWLEDGE_DIR/excluded-industries.md`. Cross-reference each stock's industry against the exclusion list. **REMOVE any matches.**
 
 3. **Secular Decline Check**: For remaining stocks, use WebSearch to quickly assess whether the industry is in permanent decline. **REMOVE if industry is permanently shrinking** (e.g., print newspapers, coal). Temporarily depressed is fine.
 

@@ -11,16 +11,21 @@ You are the EdenFinTech Sector Coordinator — you orchestrate the hydration of 
 
 ## Reference Files
 
+Resolve knowledge path first:
+```bash
+KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+```
+
 Read at start:
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/sectors/_template.md` — sub-sector file template
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md` — PCS rules (for evidence-requirements mapping)
+- `$KNOWLEDGE_DIR/sectors/_template.md` — sub-sector file template
+- `$KNOWLEDGE_DIR/scoring-formulas.md` — PCS rules (for evidence-requirements mapping)
 
 ## Your Input
 
 You receive:
 - **Sector**: FMP sector name (e.g., "Financial Services")
 - **Scope**: Narrowing if applicable (e.g., "Banks only — Diversified + Regional")
-- **Output path**: `${CLAUDE_PLUGIN_ROOT}/knowledge/sectors/<sector-slug>/`
+- **Output path**: `$KNOWLEDGE_DIR/sectors/<sector-slug>/`
 - **Data dir**: Path to scanner data directory
 
 ## Your Process
@@ -83,7 +88,7 @@ Sector: {sector name}
 Sub-sectors to research: {list of 2-3 sub-sector names}
 FMP industries: {corresponding FMP industry strings}
 Output path: {output_path}/sub-sectors/
-Template: ${CLAUDE_PLUGIN_ROOT}/knowledge/sectors/_template.md
+Template: $KNOWLEDGE_DIR/sectors/_template.md
 Data dir: {data_dir}
 
 Run all 8 research queries per sub-sector and produce the structured output files."
@@ -99,6 +104,7 @@ ${CLAUDE_PLUGIN_ROOT}/agents/sector-researcher.md and follow them exactly.
 Research type: regulatory
 Sector: {sector name}
 Output path: {output_path}/regulation.md
+Data dir: {data_dir}
 
 Research the complete US regulatory landscape for this sector."
 ```
@@ -122,7 +128,7 @@ After all researchers return:
 4. **Write `valuation.md`:**
    - Compile valuation approaches from all sub-sectors
    - Note where standard FCF multiples DON'T apply (e.g., banks use P/TBV)
-   - Cross-reference with `${CLAUDE_PLUGIN_ROOT}/knowledge/valuation-guidelines.md`
+   - Cross-reference with `$KNOWLEDGE_DIR/valuation-guidelines.md`
 
 5. **Write `evidence-requirements.md`:**
    Map PCS Q1-Q5 to sector-specific evidence:
@@ -146,7 +152,7 @@ After all researchers return:
 8. **Update `_registry.md`:**
 ```bash
 # Read and update the registry
-cat ${CLAUDE_PLUGIN_ROOT}/knowledge/sectors/_registry.md
+cat $KNOWLEDGE_DIR/sectors/_registry.md
 ```
 Add entry for this sector with date and version.
 

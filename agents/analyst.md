@@ -34,12 +34,17 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh --fresh profile TICKER
 
 ## Reference Files
 
+Resolve knowledge path first:
+```bash
+KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+```
+
 Read these for rules and formulas:
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/strategy-rules.md` — Complete strategy rules
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md` — Scoring math
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/excluded-industries.md` — Industry exclusions
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/valuation-guidelines.md` — FCF multiple baselines, heroic assumptions test
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/current-portfolio.md` — Current holdings
+- `$KNOWLEDGE_DIR/strategy-rules.md` — Complete strategy rules
+- `$KNOWLEDGE_DIR/scoring-formulas.md` — Scoring math
+- `$KNOWLEDGE_DIR/excluded-industries.md` — Industry exclusions
+- `$KNOWLEDGE_DIR/valuation-guidelines.md` — FCF multiple baselines, heroic assumptions test
+- `$KNOWLEDGE_DIR/current-portfolio.md` — Current holdings
 
 ## Your Process
 
@@ -168,7 +173,7 @@ CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 
 ### Step 6: Decision Scoring
 
-Read `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md` for exact math.
+Read `$KNOWLEDGE_DIR/scoring-formulas.md` for exact math.
 
 **Probability Ceiling Check (MANDATORY before scoring):**
 Before estimating probability, check the probability ceilings in scoring-formulas.md.

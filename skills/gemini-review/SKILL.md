@@ -60,12 +60,12 @@ Cap at 500 lines of diff. If larger, include stats + the most important file dif
 
 ### Section 3: Knowledge Files (full content)
 
-Read and include the complete content of each:
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/strategy-rules.md`
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md`
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/valuation-guidelines.md`
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/excluded-industries.md`
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/current-portfolio.md`
+Resolve knowledge path: `KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)`. Read and include the complete content of each:
+- `$KNOWLEDGE_DIR/strategy-rules.md`
+- `$KNOWLEDGE_DIR/scoring-formulas.md`
+- `$KNOWLEDGE_DIR/valuation-guidelines.md`
+- `$KNOWLEDGE_DIR/excluded-industries.md`
+- `$KNOWLEDGE_DIR/current-portfolio.md`
 
 ### Section 4: Agent Definitions (full content)
 
@@ -83,7 +83,7 @@ Include any NEW agent files not in this list.
 
 ### Section 6: Previous Review Findings
 
-Read the most recent `result/gemini-v*-deep-review.md` file and include its **Critical Findings Summary** table and **Overall Confidence** score. If no previous review exists, note "First review — no prior findings."
+Resolve the data directory: `DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)`. Read the most recent `$DATA_DIR/result/gemini-v*-deep-review.md` file and include its **Critical Findings Summary** table and **Overall Confidence** score. If no previous review exists, note "First review — no prior findings."
 
 ### Section 7: Review Instructions
 
@@ -155,7 +155,7 @@ Note any corrections in the final report under a "**Reviewer Corrections**" sect
 Merge the initial review, follow-up analysis, and any corrections into a single report. Save to:
 
 ```
-${CLAUDE_PLUGIN_ROOT}/result/gemini-v{VERSION}-deep-review.md
+$DATA_DIR/result/gemini-v{VERSION}-deep-review.md
 ```
 
 The report should follow this structure:
@@ -207,7 +207,7 @@ After saving the report:
 git tag "gemini-review-v{VERSION}"
 ```
 
-2. **Update the original strategy analysis** — add/update a line at the top of `result/gemini-strategy-analysis.md` pointing to the latest review:
+2. **Update the original strategy analysis** — add/update a line at the top of `$DATA_DIR/result/gemini-strategy-analysis.md` pointing to the latest review:
 ```markdown
 > **Latest review:** See [gemini-v{VERSION}-deep-review.md](gemini-v{VERSION}-deep-review.md) ({date}).
 ```

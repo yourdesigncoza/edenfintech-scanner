@@ -20,8 +20,8 @@ A Claude Code plugin that implements an on-demand NYSE stock scanner using the E
 - **Orchestrator** (`agents/orchestrator.md`): Dispatches screener, groups survivors by industry cluster, spawns parallel analyst agents (one per cluster), compiles final report. Has Task tool access to spawn sub-agents.
 - **Screener** (`agents/screener.md`): Steps 1-2. Broken-chart detection (60%+ off ATH), industry exclusions, 5-check filter (solvency, dilution, revenue growth, ROIC, valuation). Should reduce thousands to 5-15 survivors. No Task tool — leaf agent.
 - **Analyst** (`agents/analyst.md`): Steps 3-6. Competitor comparison, qualitative deep dive (moats, management, catalysts), 4-input valuation model, decision scoring. Hard rule: no catalysts = automatic pass. No Task tool — leaf agent.
-- **Knowledge files** (`knowledge/`): Strategy rules, scoring formulas, excluded industries, current portfolio holdings, valuation guidelines. Agents read these at runtime via `${CLAUDE_PLUGIN_ROOT}/knowledge/`.
-- **Sector knowledge** (`knowledge/sectors/`): Per-sector hydrated knowledge files produced by `/sector-hydrate`. Sub-sector analysis, regulation, valuation approaches, evidence requirements. Registry at `_registry.md`.
+- **Knowledge files** (`$SCANNER_DATA_DIR/knowledge/`): Strategy rules, scoring formulas, excluded industries, current portfolio holdings, valuation guidelines. Agents resolve path via `bash scripts/fmp-api.sh knowledge-dir`. Source copies in `knowledge/` for git tracking; runtime reads from data dir.
+- **Sector knowledge** (`$SCANNER_DATA_DIR/knowledge/sectors/`): Per-sector hydrated knowledge files produced by `/sector-hydrate`. Sub-sector analysis, regulation, valuation approaches, evidence requirements. Registry at `_registry.md`.
 - **Sector Coordinator** (`agents/sector-coordinator.md`): Orchestrates sector hydration — discovers sub-sectors via FMP + Perplexity, spawns parallel researchers, synthesizes output. Has Task tool.
 - **Sector Researcher** (`agents/sector-researcher.md`): Leaf agent for sector research. 2-phase: (A) fires 8 parallel `perplexity_ask` queries for cited facts, (B) Claude synthesizes results into structured output. No Task tool.
 - **FMP API script** (`scripts/fmp-api.sh`): Bash wrapper around Financial Modeling Prep **Stable API** (`https://financialmodelingprep.com/stable`). All data fetching goes through this.
@@ -31,7 +31,7 @@ Data flows between agents via Task tool prompt/response — the orchestrator pas
 
 ## Key Conventions
 
-- All agent/skill files use `${CLAUDE_PLUGIN_ROOT}` for paths — never hardcode absolute paths.
+- All agent/skill files use `${CLAUDE_PLUGIN_ROOT}` for script/agent paths. Knowledge files use `$KNOWLEDGE_DIR` (resolved via `bash scripts/fmp-api.sh knowledge-dir`) which points to `$SCANNER_DATA_DIR/knowledge/`. Never hardcode absolute paths.
 - API keys live in `$SCANNER_DATA_DIR/.env` (survives plugin cache refreshes). Plugin root `.env` only has `SCANNER_DATA_DIR`. Free tier: 250 req/day (sector scans). Paid tier needed for full NYSE scans.
 - Scan reports save to `$SCANNER_DATA_DIR/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md` (primary), with copies to `docs/scans/` and `/home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/`. Naming: `full-nyse`, `consumer-defensive`, or `CPS-BABA-HRL`.
 - Strategy has hard rules that must never be bypassed: 30% CAGR hurdle, no-catalysts = pass, excluded industries list, 12-position max, 50% single-theme cap.

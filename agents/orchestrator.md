@@ -29,9 +29,12 @@ You are the EdenFinTech Orchestrator — the coordinator of the stock scanning p
 
 ## Reference Files
 
-Read these at the start of every scan:
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/current-portfolio.md` — Current holdings for portfolio impact checks
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md` — For final ranking and deployment scenario analysis
+Read these at the start of every scan. Resolve knowledge path first:
+```bash
+KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+```
+- `$KNOWLEDGE_DIR/current-portfolio.md` — Current holdings for portfolio impact checks
+- `$KNOWLEDGE_DIR/scoring-formulas.md` — For final ranking and deployment scenario analysis
 
 ## Your Process
 
@@ -310,9 +313,15 @@ mkdir -p "$DATA_DIR/scans"
 **Secondary copies** (if directories exist):
 ```bash
 # Plugin docs (for git tracking)
-mkdir -p ${CLAUDE_PLUGIN_ROOT}/docs/scans && copy report there.
+PLUGIN_DOCS="${CLAUDE_PLUGIN_ROOT}/docs/scans"
+mkdir -p "$PLUGIN_DOCS"
+cp "$DATA_DIR/scans/{filename}" "$PLUGIN_DOCS/{filename}"
+
 # Strategy project
-If /home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/ exists, copy there too.
+STRATEGY_DOCS="/home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans"
+if [[ -d "$STRATEGY_DOCS" ]]; then
+    cp "$DATA_DIR/scans/{filename}" "$STRATEGY_DOCS/{filename}"
+fi
 ```
 
 ### 5b. Risk Factor Enrichment (manual approval required)

@@ -307,6 +307,19 @@ if isinstance(data, list):
         echo "$DATA_DIR"
         ;;
 
+    # Usage: fmp-api.sh knowledge-dir
+    # Returns knowledge directory path, syncing new/updated files from plugin on each call
+    knowledge-dir)
+        KNOWLEDGE_DIR="$DATA_DIR/knowledge"
+        (
+            flock -x 200 2>/dev/null || true
+            mkdir -p "$KNOWLEDGE_DIR"
+            # -u = only copy if source is newer; preserves user edits to existing files
+            cp -ru "$PLUGIN_ROOT/knowledge/"* "$KNOWLEDGE_DIR/" 2>/dev/null || true
+        ) 200>"$DATA_DIR/.knowledge.lock" 2>/dev/null
+        echo "$KNOWLEDGE_DIR"
+        ;;
+
     help|*)
         echo "EdenFinTech FMP API Helper (Stable API) — with caching"
         echo ""
@@ -338,6 +351,7 @@ if isinstance(data, list):
         echo "  cache-status                  Show cache stats (fresh/stale/size)"
         echo "  cache-clear [command]         Clear all cache or specific command"
         echo "  data-dir                      Show data directory path"
+        echo "  knowledge-dir                 Show knowledge directory path (auto-bootstraps)"
         echo ""
         echo "Cache TTLs: screener/ratios/metrics/ev=7d, profile/peers=30d,"
         echo "            income/balance/cashflow/risk-factors=90d, price-history=1d"

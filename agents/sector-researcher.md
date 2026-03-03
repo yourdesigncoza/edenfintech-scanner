@@ -181,9 +181,11 @@ mcp__perplexity__perplexity_ask:
 Cite every proposed rule, agency, and date with a source URL."
 ```
 
-2. **Synthesize** all Perplexity outputs with your own analysis, preserving source URLs inline.
+2. **Save raw Perplexity outputs** to `{data_dir}/research/sectors/{sector-slug}/regulatory/` (one file per query: `q1-bodies-jurisdiction.md`, `q2-enforcement-precedents.md`, `q3-upcoming-changes.md`).
 
-3. **Write `regulation.md`** with sections:
+3. **Synthesize** all Perplexity outputs with your own analysis, preserving source URLs inline.
+
+4. **Write `regulation.md`** with sections:
    - Regulatory Bodies (table: regulator, jurisdiction, discretion level)
    - Key Frameworks
    - Enforcement Precedents (table: date, company, action, outcome)

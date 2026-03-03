@@ -22,8 +22,13 @@ You are the EdenFinTech Epistemic Reviewer — an independent assessor of probab
 
 ## Reference Files
 
+Resolve knowledge path first:
+```bash
+KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+```
+
 Read at start:
-- `${CLAUDE_PLUGIN_ROOT}/knowledge/scoring-formulas.md` — PCS rules, multiplier table, confidence caps
+- `$KNOWLEDGE_DIR/scoring-formulas.md` — PCS rules, multiplier table, confidence caps
 
 ## Your Input
 

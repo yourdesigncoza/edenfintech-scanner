@@ -55,7 +55,8 @@ Only continue to Sector Resolution if the `perplexity_ask` call returns a succes
 
 2. **Check for existing hydration:**
 ```bash
-ls ${CLAUDE_PLUGIN_ROOT}/knowledge/sectors/<sector-slug>/_meta.md 2>/dev/null
+KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+ls $KNOWLEDGE_DIR/sectors/<sector-slug>/_meta.md 2>/dev/null
 ```
 If exists, warn the user: "Sector `<name>` was hydrated on `<date>` (version `<n>`). Re-hydrate will overwrite. Proceed?"
 
@@ -71,7 +72,7 @@ ${CLAUDE_PLUGIN_ROOT}/agents/sector-coordinator.md and follow them exactly.
 
 Sector: {FMP sector name}
 Scope: {narrow scope if applicable, e.g., 'Banks only — Diversified + Regional'}
-Output path: ${CLAUDE_PLUGIN_ROOT}/knowledge/sectors/{sector-slug}/
+Output path: $(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)/sectors/{sector-slug}/
 Data dir: $(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
 
 Run the full 3-phase hydration pipeline."

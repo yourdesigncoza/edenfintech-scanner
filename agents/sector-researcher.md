@@ -1,7 +1,7 @@
 ---
 name: edenfintech-sector-researcher
 description: |
-  Researches sector knowledge for the EdenFinTech scanner. Runs per-section `perplexity_ask` queries (cited facts) + Claude synthesis and produces structured sub-sector files or regulatory analysis. Leaf agent — no Task tool.
+  Researches sector knowledge for the EdenFinTech scanner. Runs per-section `perplexity_ask` queries (cited facts), audits for gaps/contradictions (Phase A.5), then Claude synthesis. Produces structured sub-sector files or regulatory analysis. Leaf agent — no Task tool.
 model: inherit
 color: teal
 tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch", "mcp__perplexity__*"]
@@ -24,15 +24,94 @@ For each sub-sector, run all 8 queries below using the 2-phase approach describe
 #### Execution Strategy: Perplexity → Claude Synthesis
 
 **Phase A — Perplexity (cited facts):**
-1. **Fire all 8 queries in a single turn** using parallel `mcp__perplexity__perplexity_ask` calls. Each returns cited facts with inline source URLs — no separate WebFetch step needed.
+1. **Fire all 8 queries in a single turn** — invoke `mcp__perplexity__perplexity_ask` 8 separate times in your tool output list. Do not wait for Q1's result before requesting Q2. Each returns cited facts with inline source URLs — no separate WebFetch step needed.
 2. **Save raw Perplexity output** immediately (one file per query: `q1-structure.md`, `q2-regulatory.md`, etc.) to `{data_dir}/research/sectors/{sector-slug}/{sub-sector-slug}/`.
 3. If `perplexity_ask` fails for a query, fall back to `mcp__perplexity__perplexity_search` (returns URL list) → `WebFetch` top results. If that also fails, use `WebSearch` directly.
 
+**Phase A.5 — Research Audit (gap detection):**
+
+After saving all 8 raw outputs, review them as a **Research Auditor** before synthesis. The goal is to catch gaps, contradictions, and quality issues that would weaken the final output.
+
+**Step 1 — Scan all 8 outputs and emit an `<audit_log>` block.**
+
+Before deciding on follow-ups, you MUST write an `<audit_log>` block that evaluates each query against the gap criteria. This prevents skipping the audit.
+
+```
+<audit_log>
+Q1 Structure: PASS — margins 4-6%, 3 named competitors, 2024 citations
+Q2 Regulatory: FAIL (Missing Data) — no specific enforcement cases or fine amounts
+Q3 Macro: PASS — rate sensitivity quantified, 2025 citations
+Q4 Failure: PASS — 4 named bankruptcies with dates
+Q5 Binary: PASS — 3 trigger types with examples
+Q6 Turnaround: CONFIRMED_ABSENCE — niche sub-sector, no distress-recovery precedents exist
+Q7 Epistemic: FAIL (Citation Vacuum) — 180 words, 0 source URLs
+Q8 Valuation: PASS — FCF multiples 8-12x, P/TBV ranges cited
+
+Gaps found: 2 actionable (Q2, Q7) + 1 confirmed absence (Q6)
+Follow-up queries needed: 2 (Q2+Q7 can combine into one regulatory-evidence query)
+</audit_log>
+```
+
+**Gap criteria table** (use `{current_date}` from input metadata for staleness checks — data is stale if all citations predate `{current_date}` by >2 years):
+
+| Gap Type | Detection Criteria | Example |
+|----------|-------------------|---------|
+| **Missing Data** | Section lacks specific percentages, dollar figures, company names, or regulator names that the query requested | Q1 returns "margins vary by company" instead of "EBITDA margins: 4-6% (Source)" |
+| **Thin Evidence** | Fewer than 2 named examples for Q4 (Failure Patterns) or Q6 (Turnaround Precedents) | Q6 returns only 1 turnaround case or generic descriptions without company names |
+| **Staleness** | All citations predate `{current_date}` by >2 years in a sector with recent material changes | Q2 (Regulatory) cites only pre-2024 enforcement actions when major 2025 rules exist |
+| **Contradiction** | Two queries assert conflicting facts about the same metric or trend | Q1 says "margins expanding 2023-2025" but Q3 says "input cost inflation compressing margins" |
+| **Citation Vacuum** | A section >100 words contains zero inline source URLs | Q7 (Epistemic Profile) has 200 words of analysis with no citations |
+
+**Step 2 — Decide: remediate or pass.**
+
+- If **no critical gaps found** → skip to Phase B (0 follow-ups is the happy path).
+- If gaps found → generate **1-3 follow-up queries** (hard cap: 3). Do NOT generate more than 3.
+- **`CONFIRMED_ABSENCE`**: If a gap exists because data genuinely doesn't exist (e.g., no turnaround precedents in a niche sub-sector), mark it `CONFIRMED_ABSENCE` in the audit log instead of generating a follow-up. Phase B must explicitly state the absence (e.g., "No historical turnaround precedents found for this sub-sector") rather than silently omitting the section.
+
+**Step 3 — Construct follow-up queries.**
+
+Follow-ups must be **structurally different** from the initial 8 — narrow, keyword-stuffed, entity-specific. Not rephrased versions of the originals.
+
+Context-inject the failure: tell Perplexity what the first pass returned so it doesn't repeat the same sources.
+
+```
+# BAD — rephrase of Q2:
+"What are the regulatory risks for US regional banks?"
+
+# GOOD — targeted, context-injected:
+"FDIC enforcement actions regional banks 2022-2025 specific fines consent orders amounts CRA violations. Previous search returned only general regulatory overview — need specific enforcement cases with dollar amounts and dates."
+
+# GOOD — contradiction resolver:
+"US regional bank net interest margins 2023-2025 quarterly trend data. Conflicting sources: one claims NIM expanding, another claims compression from input costs. Need authoritative FDIC or Fed data with specific quarterly figures."
+```
+
+**Step 4 — Execute follow-ups.**
+
+1. Invoke all follow-up `mcp__perplexity__perplexity_ask` calls in a single tool output list — do not wait for one result before requesting the next (same fallback chain as Phase A).
+2. Save raw outputs to `{data_dir}/research/sectors/{sector-slug}/{sub-sector-slug}/` as `followup-1.md`, `followup-2.md`, etc. Prepend each file with `### SUPPLEMENTARY RESEARCH ###` header so Phase B can distinguish follow-up data from initial queries.
+
+**Step 5 — Assemble audit patch.**
+
+Write a short `audit-patch.md` to `{data_dir}/research/sectors/{sector-slug}/{sub-sector-slug}/` containing ONLY the corrected/added information from follow-ups — not the full raw outputs. This keeps Phase B synthesis context lean. Format:
+
+```
+## Audit Patch
+Queries remediated: Q2, Q6
+
+### Q2 Regulatory (was: Missing Data)
+[corrected data from followup-1.md — specific enforcement cases only]
+
+### Q6 Turnaround (CONFIRMED_ABSENCE)
+No historical turnaround precedents exist for this sub-sector.
+```
+
 **Phase B — Claude Synthesis (your own analysis):**
-4. Read all 8 Perplexity outputs.
+4. Read all 8 Perplexity outputs. For remediated queries, read from `audit-patch.md` instead of (not in addition to) the original query output — the patch contains the corrected data. For `CONFIRMED_ABSENCE` entries, explicitly state the absence in the relevant section.
 5. Synthesize into template-structured output — YOU are Claude, reason about the source material directly.
+   - **Q6 turnaround precedents**: The synthesized table MUST end with a **success count summary** line, e.g., "4 of 7 distress cases recovered within 3yr → ~57% base rate". This is the base rate analysts will anchor their probability to. If no precedents exist (CONFIRMED_ABSENCE), state: "No turnaround precedents — analyst default base rate: 50%".
 6. **Preserve inline citations** — every factual claim should carry a source URL from the Perplexity response.
-7. Fill gaps: where Perplexity returned thin results, use `WebSearch` to supplement.
+7. Fill gaps: where Perplexity returned thin results AND Phase A.5 did not remediate, use `WebSearch` to supplement.
+8. **Supplementary data priority**: Phase A.5 follow-up results **override** Phase A results when they conflict. The follow-up was specifically targeted to resolve the gap or contradiction.
 
 **403 fallback** (for URLs that WebFetch cannot access — SEC EDGAR, FDIC, Federal Reserve):
 ```
@@ -130,10 +209,10 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 #### Assembly
 
-After all 8 queries complete for a sub-sector:
+After all 8 queries complete and Phase A.5 audit is done for a sub-sector:
 
 1. **Read the template** from the provided template path
-2. **Map query outputs to template sections:**
+2. **Map query outputs to template sections** (include any Phase A.5 follow-up data that supplements or overrides the original query):
    - Query 1 → Overview + Key Metrics
    - Query 2 → regulatory parts of Risk Profile
    - Query 3 → macro parts of Risk Profile
@@ -148,7 +227,7 @@ After all 8 queries complete for a sub-sector:
    - Kill Factors: events that make a stock uninvestable (maps to enrichment override triggers)
    - Friction Factors: risks that reduce confidence but don't kill the thesis (maps to PCS modifiers)
 6. **Write the file** to `{output_path}/{sub-sector-slug}.md`
-7. **Save raw Perplexity outputs** to `{data_dir}/research/sectors/{sector-slug}/{sub-sector-slug}/` (one file per query: `q1-structure.md`, `q2-regulatory.md`, etc.)
+7. **Save raw Perplexity outputs** to `{data_dir}/research/sectors/{sector-slug}/{sub-sector-slug}/` (one file per query: `q1-structure.md`, `q2-regulatory.md`, etc., plus `followup-N.md` from Phase A.5)
 
 #### Quality Checks
 
@@ -183,9 +262,17 @@ Cite every proposed rule, agency, and date with a source URL."
 
 2. **Save raw Perplexity outputs** to `{data_dir}/research/sectors/{sector-slug}/regulatory/` (one file per query: `q1-bodies-jurisdiction.md`, `q2-enforcement-precedents.md`, `q3-upcoming-changes.md`).
 
-3. **Synthesize** all Perplexity outputs with your own analysis, preserving source URLs inline.
+3. **Audit for gaps** (Phase A.5 — same logic as sub-sector research):
+   - Scan all 3 outputs for: missing specific enforcement cases/fines, thin precedent lists (<2 named cases), stale citations (>2yr for upcoming changes), contradictions, citation vacuums.
+   - If gaps found → fire **0-2 follow-up queries** (hard cap: 2 for regulatory since only 3 initial queries). Use narrow, keyword-stuffed queries that context-inject the failure.
+   - Save follow-ups to `{data_dir}/research/sectors/{sector-slug}/regulatory/followup-N.md` with `### SUPPLEMENTARY RESEARCH ###` header.
+   - Use `CONFIRMED_ABSENCE` for gaps where data genuinely doesn't exist.
+   - Write `audit-patch.md` with corrected/added data only (same format as sub-sector patch).
+   - If no gaps → proceed directly to synthesis.
 
-4. **Write `regulation.md`** with sections:
+4. **Synthesize** all Perplexity outputs (plus any Phase A.5 follow-ups) with your own analysis, preserving source URLs inline. Follow-up data overrides initial query data on conflicts.
+
+5. **Write `regulation.md`** with sections:
    - Regulatory Bodies (table: regulator, jurisdiction, discretion level)
    - Key Frameworks
    - Enforcement Precedents (table: date, company, action, outcome)
@@ -203,4 +290,17 @@ Cite every proposed rule, agency, and date with a source URL."
 - If a query returns nothing useful after fallback, write "Insufficient data" in that section — do NOT fabricate
 - Do NOT invent data, companies, dates, or metrics. If uncertain, say so.
 - Target 200-500 lines per sub-sector file. Structured data > narrative
-- Always save raw Perplexity outputs for auditability (Phase A outputs)
+- Always save raw Perplexity outputs for auditability (Phase A outputs and Phase A.5 follow-ups)
+
+### Phase A.5 Rules
+
+- Run the audit AFTER saving all Phase A raw outputs, BEFORE synthesis — **single pass only: A → A.5 → B, no recursion**
+- 0 follow-ups is the happy path — only generate queries when the audit finds critical gaps
+- Hard cap: **3 follow-ups** for sub-sector research, **2 follow-ups** for regulatory research
+- Follow-up queries must be **structurally different** from the initial queries — narrow, keyword-stuffed, entity-specific. Never rephrase the original query
+- **Context-inject the failure**: tell Perplexity what the first pass returned and what was missing, so it doesn't repeat the same sources
+- Fire all follow-up queries in parallel (same as Phase A)
+- Save follow-up raw outputs as `followup-N.md` (with `### SUPPLEMENTARY RESEARCH ###` header) for auditability
+- Write `audit-patch.md` containing only corrected/added data — Phase B reads patch instead of re-reading full follow-up outputs
+- Use `CONFIRMED_ABSENCE` when data genuinely doesn't exist — Phase B must explicitly state the absence, never silently omit
+- If data is still missing after follow-ups, report as "Insufficient data" in Phase B — do NOT fabricate to fill the gap

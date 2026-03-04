@@ -90,6 +90,7 @@ FMP industries: {corresponding FMP industry strings}
 Output path: {output_path}/sub-sectors/
 Template: $KNOWLEDGE_DIR/sectors/_template.md
 Data dir: {data_dir}
+Current date: {YYYY-MM-DD}
 
 Run all 8 research queries per sub-sector and produce the structured output files."
 ```
@@ -105,6 +106,7 @@ Research type: regulatory
 Sector: {sector name}
 Output path: {output_path}/regulation.md
 Data dir: {data_dir}
+Current date: {YYYY-MM-DD}
 
 Research the complete US regulatory landscape for this sector."
 ```

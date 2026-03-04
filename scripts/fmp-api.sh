@@ -73,6 +73,9 @@ cached_fetch() {
     if [[ "$FRESH" == "false" && -f "$cache_file" ]]; then
         local file_age=$(( $(date +%s) - $(stat -c %Y "$cache_file") ))
         if (( file_age < ttl )); then
+            local bytes=$(stat -c %s "$cache_file")
+            [[ -n "${FMP_LOG_FILE:-}" ]] && \
+                echo "$(date -Iseconds) $cmd_name $cache_key CACHE_HIT $bytes" >> "$FMP_LOG_FILE"
             cat "$cache_file"
             return 0
         fi
@@ -85,16 +88,23 @@ cached_fetch() {
 
     # Skip caching empty/error responses
     if [[ -z "$response" || "$response" == "null" || "$response" == "{}" || "$response" == "[]" ]]; then
+        [[ -n "${FMP_LOG_FILE:-}" ]] && \
+            echo "$(date -Iseconds) $cmd_name $cache_key LIVE_FETCH 0" >> "$FMP_LOG_FILE"
         echo "$response"
         return 0
     fi
     # Skip caching API error messages (JSON errors and premium/subscription text)
     if echo "$response" | grep -qiE '"Error Message"|Premium Query Parameter|not available under your current subscription'; then
+        [[ -n "${FMP_LOG_FILE:-}" ]] && \
+            echo "$(date -Iseconds) $cmd_name $cache_key LIVE_FETCH 0" >> "$FMP_LOG_FILE"
         echo "$response"
         return 0
     fi
 
     echo "$response" | tee "$cache_file"
+    local bytes=${#response}
+    [[ -n "${FMP_LOG_FILE:-}" ]] && \
+        echo "$(date -Iseconds) $cmd_name $cache_key LIVE_FETCH $bytes" >> "$FMP_LOG_FILE"
 }
 
 case "$cmd" in

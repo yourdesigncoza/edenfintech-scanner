@@ -28,8 +28,10 @@ Insert Phase A.5 between Phase A (8 queries) and Phase B (synthesis):
 3. Uses 5 detection criteria: hard data missing, thin evidence (<2 examples), staleness (>2yr), cross-query contradictions, citation vacuum (>100 words / 0 URLs)
 4. Generates 0-3 narrow follow-up `perplexity_ask` queries (keyword-stuffed, context-injected)
 5. If audit passes → skip to Phase B (0 follow-ups valid)
-6. Follow-up results labeled `### SUPPLEMENTARY RESEARCH ###`, override Phase A on conflicts
+6. Follow-up results labeled `### SUPPLEMENTARY RESEARCH ###`, override Phase A on conflicts — but only if source authority is equal or higher (regulatory filings > earnings data > news > opinion pieces)
 7. Single pass only: A → A.5 → B — no recursion
+8. `CONFIRMED_ABSENCE` flag — if a gap exists because data genuinely doesn't exist (e.g., no turnaround precedents in a niche industry), auditor returns this flag instead of forcing a follow-up. Phase B must explicitly state "No historical precedents found" rather than silently omitting the section
+9. Phase A.5 outputs a "patch file" (only corrected/added info) to Phase B, not the full raw outputs — keeps synthesis context lean
 
 Full spec with acceptance criteria: `.planning/reflection-step/REQUIREMENTS.md`
 

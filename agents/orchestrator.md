@@ -71,6 +71,52 @@ From the screener output:
 - If a stock has no peers in the survivor list, it becomes a single-stock cluster
 - Aim for 2-4 stocks per cluster when possible
 
+### 3b. Sector Knowledge Check
+
+Before launching analysts, verify sector knowledge is available and fresh:
+
+```bash
+DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
+HYDRATION_FILE="$DATA_DIR/knowledge/sectors/hydration-status.json"
+STALE_DAYS=180
+```
+
+1. **Read `hydration-status.json`** and identify which sectors the survivors belong to
+2. For each sector with survivors, check:
+   - `status` == `"hydrated"` AND `hydrated_date` is less than `stale_after_days` (180) old → **fresh, proceed**
+   - `status` == `"skip"` → **proceed without sector knowledge** (heavily excluded sector)
+   - Otherwise → **needs hydration**
+3. If any sector needs hydration, **pause and notify the user**:
+   ```
+   "Sector knowledge needed for: {sector1}, {sector2}
+   These sectors have not been hydrated (or data is >6 months old).
+   Analyst quality will be significantly better with sector context.
+
+   Options:
+   a) Hydrate now before analysis (recommended — adds ~5 min per sector)
+   b) Proceed without sector knowledge
+   c) Abort scan"
+   ```
+4. If user chooses (a), hydrate sectors **one at a time** (serial, not parallel — avoids JSON write conflicts):
+   - For each sector needing hydration:
+     a. Spawn the sector coordinator:
+        ```
+        Use the Task tool to launch a general-purpose agent with this prompt:
+
+        "You are running the EdenFinTech Sector Coordinator. Read the agent instructions at
+        ${CLAUDE_PLUGIN_ROOT}/agents/sector-coordinator.md and follow them exactly.
+
+        Hydrate sector: {sector_fmp_name}
+
+        Return confirmation when complete."
+        ```
+     b. Wait for completion
+     c. Update `hydration-status.json` for that sector:
+        - Set `status` to `"hydrated"`
+        - Set `hydrated_date` to today's date (YYYY-MM-DD format, e.g. `2026-03-04`)
+        - Update the top-level `updated` field
+     d. Move to next sector
+
 ### 4. Phase 2: Deep Analysis
 
 For each cluster, spawn a parallel analyst agent:
@@ -158,6 +204,10 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh effective-prob {base_probabilit
    - If base probability is 60% exactly → flag: `threshold_proximity_warning: base probability AT the 60% hard cap — review for threshold anchoring`
    - These are warnings only — they don't reject the candidate. They surface fragility for human scrutiny.
 
+4d. **Probability band validation**: Confirm analyst probability is a valid band (50/60/70/80). If not, flag as `non_compliant_probability` and round to nearest valid band:
+   - <55% → 50%, 55-64% → 60%, 65-74% → 70%, 75%+ → 80%
+   - Note in report: "Probability rounded: analyst assigned {n}%, corrected to {band}%"
+
 5. **Filter on effective probability**: If effective probability < 60% → move candidate to "Rejected at Analysis" with reason: "epistemic confidence filter (base {base}% x {multiplier} = {effective}%, below 60% threshold)"
 
 6. **Recompute decision score** using effective probability:
@@ -202,12 +252,16 @@ Once all analysts return:
     ```
 2. **Rank by decision score** (highest first)
 3. **Filter out**: any stock with score implying CAGR < 30% or probability < 60%
-3b. **Hard Rule Audit** — Before ranking, move to "Rejected at Analysis" any stock where:
-    - Base case CAGR < 30% (unless 20%+ exception with top-tier CEO + 6yr+ runway clearly applies)
-    - Base case probability < 60%
-    - No catalysts were identified (automatic pass per strategy rules)
-    - Score required ad-hoc adjustments or multiple revisions to reach its final value
-    These stocks appear in "Rejected at Analysis" section, NOT in ranked candidates.
+3b. **Hard Rule Audit** — Before ranking, route each stock into one of three buckets:
+    - **Rejected**: Move to "Rejected at Analysis" if:
+      - Base case CAGR < 20%
+      - Base case CAGR 20-29.9% WITHOUT exception evidence (no top-tier CEO or <6yr runway)
+      - Base case probability < 60%
+      - No catalysts were identified (automatic pass per strategy rules)
+      - Score required ad-hoc adjustments or multiple revisions to reach its final value
+    - **Exception candidates**: CAGR 20-29.9% with analyst label `EXCEPTION CANDIDATE` → collect into `exception_candidates` list. These are NOT ranked and NOT rejected — they appear in the "Pending Human Review" section.
+    - **Ranked**: CAGR >= 30% and all other rules pass → proceed to ranking.
+    Rejected stocks appear in "Rejected at Analysis" section. Exception candidates appear in "Pending Human Review" section.
 4. **Cross-check portfolio rules** (read current-portfolio.md):
    - How many open slots? (max 12 positions)
    - Would any candidate breach 50% single-catalyst limit?
@@ -267,6 +321,16 @@ Once all analysts return:
   - **What breaks the thesis?** {specific kill trigger}
 
 (repeat for each candidate, ranked by score)
+
+## Pending Human Review — 20% CAGR Exception Candidates
+
+> Only populated when exception candidates exist. If none: omit this section entirely.
+
+| Ticker | CAGR | Score | Downside | Prob | CEO Evidence | Runway | Why Exception May Apply |
+|--------|------|-------|----------|------|--------------|--------|------------------------|
+| {TICK} | {n}% | {n} | {n}% | {n}% | {CEO name + track record summary} | {n}yr | {1-line justification} |
+
+For each exception candidate, include the same full analysis detail as ranked candidates above (thesis, valuation, moats, catalysts, management, epistemic confidence). The human reviewer needs complete information to approve or reject the exception.
 
 ## Portfolio Impact
 - Current positions: {n}/12 | Available slots: {n}

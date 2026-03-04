@@ -145,13 +145,14 @@ CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 ```
 
 **Hurdle check:**
-- CAGR >= 30%? → Proceed
-- CAGR 20-30% with top-tier CEO + 6yr+ runway? → Proceed (flag as "exception")
+- CAGR >= 30%? → Proceed normally
+- CAGR 20-29.9% with top-tier CEO + 6yr+ runway? → **EXCEPTION CANDIDATE**: complete full analysis (valuation, moats, catalysts, epistemic) but label output as `EXCEPTION CANDIDATE — human gate required`. Cluster Summary verdict: `EXCEPTION — Human Review` (not BUY/WATCHLIST/PASS)
 - CAGR < 20%? → FAIL
 
 **CRITICAL — Hurdle Rate Discipline:**
 - The 30% CAGR hurdle applies to your BASE CASE valuation — the scenario you believe is most likely
-- If base case CAGR < 30%, the stock is an AUTOMATIC FAIL unless the 20%+ exception clearly applies (top-tier CEO + 6yr+ runway → proceed with flag, smaller position only)
+- If base case CAGR < 30%, the stock is an AUTOMATIC FAIL unless the 20%+ exception clearly applies
+- For 20-29.9% exception candidates: still complete ALL analysis steps — the human reviewer needs full context to decide
 - Do NOT use bull case CAGR to bypass the hurdle. Bull cases are supplementary context only
 - "An investable idea should be obvious." If the valuation requires heroic assumptions, it isn't obvious enough
 
@@ -198,7 +199,22 @@ Show the command AND its JSON output in your analysis. This ensures deterministi
 For each surviving stock:
 
 1. **Estimate downside %** (from worst case in Step 5)
-2. **Estimate base case probability** (0-100%, based on catalyst strength, management quality, balance sheet) — apply probability ceilings first
+2. **Assign base case probability** using banding discipline (see scoring-formulas.md "Probability Banding"):
+   - Read sector Q6 turnaround base rate (e.g., "4 of 7 recovered → ~57% → 60% band")
+   - If no sector knowledge or no Q6 precedents: default to **50%** band
+   - Name closest historical precedent (e.g., "Synovus 2009-2013")
+   - Apply Likert modifiers: Management (+10/0/-10), Balance sheet (+10/0/-10), Market conditions (+10/0/-10)
+   - Net adjustment → snap to nearest band: **50% / 60% / 70% / 80%** only
+   - Apply probability ceilings AFTER banding (ceiling may override band downward)
+   - **Output format:**
+     ```
+     Base rate: {sector Q6 rate or "no precedent → 50%"}
+     Precedent: {named company and period}
+     Adjustments: Management {Strong/Neutral/Weak} ({+10/0/-10}%), Balance sheet {S/N/W} ({+/-}%), Market {S/N/W} ({+/-}%)
+     Net: {base + adjustments}% → {nearest band}%
+     Ceiling check: {ceiling applied or "none"}
+     Final probability: {band}%
+     ```
 3. **Calculate CAGR** using `calc-score.sh cagr`
 4. **Calculate decision score** using `calc-score.sh score`
 5. **Determine position size** using `calc-score.sh size`

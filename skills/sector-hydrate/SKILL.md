@@ -10,7 +10,7 @@ version: 0.1.0
 
 # EdenFinTech Sector Hydration
 
-Build structured sector knowledge files for use in future scans. Uses Perplexity MCP (`perplexity_ask`) + Claude synthesis to produce per-sub-sector analysis covering metrics, valuation approaches, turnaround precedents, risk profiles, and evidence requirements.
+Build structured sector knowledge files for use in future scans. Uses Perplexity API (via bash script) + Claude synthesis to produce per-sub-sector analysis covering metrics, valuation approaches, turnaround precedents, risk profiles, and evidence requirements.
 
 ## Invocation
 
@@ -22,23 +22,23 @@ Parse the user's input to determine the sector:
 
 ## Prerequisites
 
-**HARD STOP** — Sector hydration relies entirely on `perplexity_ask`. Test it first before doing anything else:
+**HARD STOP** — Sector hydration relies entirely on the Perplexity API. Test it first before doing anything else:
 
-```
-Use mcp__perplexity__perplexity_ask with messages: [{"role":"user","content":"ping"}]
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/perplexity-api.sh ask "ping"
 ```
 
-**If the call fails, errors, or is denied for any reason:**
+**If the call fails or errors:**
 
 STOP immediately. Do NOT resolve the sector, do NOT spawn agents, do NOT fall back to WebSearch.
 
 Alert the user with this exact message:
 
-> **BLOCKED: Perplexity MCP unavailable** — sector hydration cannot proceed.
+> **BLOCKED: Perplexity API unavailable** — sector hydration cannot proceed.
 >
-> Fix: ensure `PERPLEXITY_API_KEY` is set in your MCP settings and the Perplexity server is listed in `.mcp.json`. Then re-run `/sector-hydrate`.
+> Fix: ensure `PERPLEXITY_API_KEY` is set in `$SCANNER_DATA_DIR/.env` or `~/.claude.json`. Then re-run `/sector-hydrate`.
 
-Only continue to Sector Resolution if the `perplexity_ask` call returns a successful response.
+Only continue to Sector Resolution if the Perplexity test call returns a successful response.
 
 ## Sector Resolution
 

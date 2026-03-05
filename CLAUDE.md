@@ -25,6 +25,7 @@ A Claude Code plugin that implements an on-demand NYSE stock scanner using the E
 - **Sector Coordinator** (`agents/sector-coordinator.md`): Orchestrates sector hydration — discovers sub-sectors via FMP + Perplexity, spawns parallel researchers, synthesizes output. Has Task tool.
 - **Sector Researcher** (`agents/sector-researcher.md`): Leaf agent for sector research. 2-phase: (A) fires 8 parallel `perplexity_ask` queries for cited facts, (B) Claude synthesizes results into structured output. No Task tool.
 - **FMP API script** (`scripts/fmp-api.sh`): Bash wrapper around Financial Modeling Prep **Stable API** (`https://financialmodelingprep.com/stable`). All data fetching goes through this.
+- **Perplexity API script** (`scripts/perplexity-api.sh`): Bash wrapper around the Perplexity API for web-grounded research. MCP tools don't propagate to sub-agents, so this provides Perplexity access via Bash. Commands: `ask`, `search`, `reason`. Cached to `$SCANNER_DATA_DIR/cache/perplexity/` (1-day TTL).
 - **Plugin manifest** (`.claude-plugin/marketplace.json`): Plugin metadata for Claude Code plugin system.
 
 Data flows between agents via Task tool prompt/response — the orchestrator passes scan parameters down and collects structured markdown results back.
@@ -51,6 +52,18 @@ Rate limit awareness:
 - `screener` accepts optional exchange and sector args: `screener NYSE "Consumer Defensive"`.
 - `sbc` and `shares` pipe JSON through python3 for formatting.
 
+## Perplexity API Script Details
+
+```bash
+bash scripts/perplexity-api.sh <command> [args...]
+```
+
+Commands: `ask`, `search`, `reason`. Use `--fresh` to bypass cache, `--recency` to filter by time.
+
+API key resolution chain: `$SCANNER_DATA_DIR/.env` → `~/.config/edenfintech-scanner/.env` → `~/.claude.json` (reads from MCP server config).
+
+**Why this exists:** MCP tools (`mcp__perplexity__*`) don't propagate to sub-agents spawned via Task/Agent tool in Claude Code. This script provides equivalent Perplexity access via Bash, which IS available in all sub-agents.
+
 ## Testing / Running
 
 ```bash
@@ -65,7 +78,7 @@ bash scripts/fmp-api.sh profile CPS
 /scan-stocks consumer staples       # sector-focused scan
 /scan-stocks CPS BABA HRL          # specific ticker analysis (skips screening)
 
-# Hydrate sector knowledge (requires Perplexity MCP)
+# Hydrate sector knowledge (requires Perplexity API key)
 /sector-hydrate Banking             # narrow: Diversified + Regional Banks
 /sector-hydrate Healthcare          # full sector
 /sector-hydrate "Consumer Defensive"

@@ -72,7 +72,14 @@ For each stock in the cluster:
 
 ### Step 4: Qualitative Deep Dive — 5 Questions
 
-**Research tool priority:** Use `mcp__perplexity__perplexity_ask` as your primary research tool — it returns cited facts with source URLs, producing higher-quality grounding than generic web search. Fall back to `WebSearch` only if Perplexity is unavailable or returns thin results. Fire multiple `perplexity_ask` calls in parallel where possible.
+**Research tool priority:** Use the Perplexity API script as your primary research tool — it returns cited facts with source URLs, producing higher-quality grounding than generic web search. Fall back to `WebSearch` only if Perplexity returns thin results.
+
+```bash
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/perplexity-api.sh ask "your research question here"
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/perplexity-api.sh ask --recency month "recent news about TICKER"
+```
+
+Fire multiple Perplexity calls in parallel where possible (separate Bash tool calls).
 
 For each surviving stock:
 

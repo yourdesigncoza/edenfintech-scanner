@@ -64,7 +64,10 @@ Answer each question Yes or No with:
 **Answering guidelines:**
 - **Q1 (Operational):** "Yes" if the thesis depends on execution (cost cuts, margin recovery, restructuring). "No" if the dominant risk is regulatory action, litigation outcome, or existential threat.
 - **Q2 (Regulatory):** "Yes" if the business operates in a stable regulatory environment. "No" if a single regulatory decision could materially alter the outcome (FDA approval, antitrust ruling, tariff change).
-- **Q3 (Precedent):** "Yes" if similar companies in similar situations have completed comparable turnarounds. "No" if the situation is genuinely novel or the outcome depends on unprecedented conditions. Use `mcp__perplexity__perplexity_ask` (preferred) or `WebSearch` (fallback) to verify precedents if uncertain.
+- **Q3 (Precedent):** "Yes" if similar companies in similar situations have completed comparable turnarounds. "No" if the situation is genuinely novel or the outcome depends on unprecedented conditions. Use the Perplexity API script (preferred) or `WebSearch` (fallback) to verify precedents if uncertain:
+  ```bash
+  bash ${CLAUDE_PLUGIN_ROOT}/scripts/perplexity-api.sh ask "Has a company in [industry] successfully recovered from [situation]? Name specific examples with outcomes."
+  ```
 - **Q4 (Non-binary):** "Yes" if there's a plausible gradient of outcomes (partial recovery, slower growth, etc.). "No" if outcomes are essentially succeed/fail with little middle ground (patent cliff, single product, regulatory approval).
 - **Q5 (Macro/geo):** "Yes" if the thesis is primarily driven by company-specific factors. "No" if material exposure to interest rates, commodity prices, currency movements, trade policy, or geopolitical events.
 

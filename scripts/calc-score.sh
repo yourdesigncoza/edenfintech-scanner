@@ -34,6 +34,11 @@ Commands:
       Apply PCS multiplier to base probability. Returns effective probability.
       Confidence must be 1-5.
 
+  floor <revenue_b> <margin_pct> <multiple> <shares_m> <current_price>
+      Calculate worst-case floor price from trough inputs.
+      Uses same 4-input formula as valuation, plus downside % from current price.
+      Trough inputs = historical worst margins/multiples from FMP data.
+
   momentum <val1> <val2> <val3> <val4> <val5>
       Assess CAGR momentum from 5 annual data points (oldest to newest).
       Computes rolling 3-year CAGRs and determines trend direction.
@@ -51,6 +56,7 @@ Examples:
   bash calc-score.sh size 63.3 39 65 30 3      # with confidence cap
   bash calc-score.sh size 63.3 39 65 30 3 binary  # with binary override
   bash calc-score.sh effective-prob 65 3        # → 55.25%
+  bash calc-score.sh floor 2.2 7.0 10 130 17.52    # trough floor price + downside %
   bash calc-score.sh momentum 1100 1000 950 1050 1150  # 5yr revenue trend
 EOF
 }
@@ -417,6 +423,46 @@ else:
     result['note'] = 'Insufficient data for momentum assessment'
 
 print(json.dumps(result, indent=2))
+"
+    ;;
+
+floor)
+    [[ $# -eq 5 ]] || err "floor requires 5 args: <revenue_b> <margin_pct> <multiple> <shares_m> <current_price>"
+    validate_number "revenue_billions" "$1"
+    validate_pct "fcf_margin_pct" "$2"
+    validate_number "multiple" "$3"
+    validate_number "shares_millions" "$4"
+    validate_number "current_price" "$5"
+
+    python3 -c "
+import json
+
+revenue_b = float('$1')
+fcf_margin_pct = float('$2')
+multiple = float('$3')
+shares_m = float('$4')
+current_price = float('$5')
+
+if shares_m <= 0:
+    raise ValueError('shares_millions must be positive')
+if current_price <= 0:
+    raise ValueError('current_price must be positive')
+
+fcf_margin = fcf_margin_pct / 100
+fcf_b = round(revenue_b * fcf_margin, 4)
+floor_price = round((fcf_b * multiple * 1000) / shares_m, 2)
+downside_pct = round(((current_price - floor_price) / current_price) * 100, 2)
+
+print(json.dumps({
+    'revenue_b': revenue_b,
+    'fcf_margin_pct': fcf_margin_pct,
+    'fcf_b': round(fcf_b, 4),
+    'multiple': multiple,
+    'shares_m': shares_m,
+    'current_price': current_price,
+    'floor_price': floor_price,
+    'downside_pct': downside_pct
+}, indent=2))
 "
     ;;
 

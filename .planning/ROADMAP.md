@@ -38,7 +38,7 @@ Plans:
   2. valuation-guidelines.md contains the Heroic Optimism test and TBV cross-check specification
   3. scoring-formulas.md references downside anchoring and the floor command as the mechanical starting point
   4. CLAUDE.md documents the `floor` command with usage example
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 - [ ] 02-01: Update strategy-rules.md, valuation-guidelines.md, scoring-formulas.md, and CLAUDE.md with worst-case specification

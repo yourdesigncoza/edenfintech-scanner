@@ -193,10 +193,54 @@ CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 - Do NOT use bull case CAGR to bypass the hurdle. Bull cases are supplementary context only
 - "An investable idea should be obvious." If the valuation requires heroic assumptions, it isn't obvious enough
 
-**Reasonable Worst Case:**
-- What if revenue grows slower? Margins don't recover? Multiple stays low?
-- Calculate floor price under pessimistic (but not catastrophic) scenario
-- Express as % downside from current price
+**Trough-Anchored Worst Case (Required):**
+
+The worst case uses the same 4-input formula with trough inputs anchored to 5yr FMP historical data. Same stock + same data = same downside estimate. The mechanical floor is the starting point, not the final answer. See `$KNOWLEDGE_DIR/strategy-rules.md` Step 5 for the full specification.
+
+**Step A — Identify trough inputs** from 5yr FMP data already fetched in Step 3:
+
+| Input | Trough Anchor | Source |
+|-------|---------------|--------|
+| Revenue | Lowest trailing-12-month revenue in 5yr FMP history | `income` endpoint |
+| FCF Margin | Lowest annual FCF margin in 5yr FMP history | `cashflow` / `income` endpoints |
+| FCF Multiple | Industry baseline from valuation-guidelines.md MINUS full discount schedule | `valuation-guidelines.md` |
+| Shares | Current diluted shares (no buyback credit in worst case) | `metrics` endpoint |
+
+**Step B — Run the floor calculator** (MUST run before writing any worst-case narrative):
+```bash
+bash scripts/calc-score.sh floor <revenue_b> <margin_pct> <multiple> <shares_m> <current_price>
+```
+Show the command AND its JSON output in the analysis. The floor_price and downside_pct from this output are the mechanical starting point.
+
+**Step C — TBV cross-check:**
+Fetch tangible book value per share from the most recent quarterly balance sheet:
+```bash
+bash scripts/fmp-api.sh balance TICKER
+```
+Compute: TBV = Total Assets - Total Liabilities - Intangible Assets - Goodwill. Then TBV/share = TBV / diluted shares.
+
+| Condition | Action |
+|-----------|--------|
+| Floor > 2x TBV/share | Flag: "TBV flag: floor ${floor} > 2x TBV/share ${tbv_share} — review for optimism" |
+| TBV/share is negative | Note: "Negative TBV — structural solvency risk, floor should reflect this" |
+| Floor < TBV/share | No flag needed (pessimistic is acceptable) |
+
+**Step D — Analyst adjustment (asymmetric override):**
+- Making the floor HARSHER (event risk, litigation, structural concerns): freely allowed, no flag needed
+- Making the floor MORE OPTIMISTIC than mechanical calculation: triggers **Heroic Optimism** flag
+- If Heroic Optimism triggered: provide 1-2 sentence justification explaining why trough conditions are implausible. If justification cannot be articulated clearly, use the mechanical floor without adjustment.
+- See `$KNOWLEDGE_DIR/valuation-guidelines.md` "Worst-Case Heroic Optimism Test" for the four trigger conditions.
+
+**Step E — Show trough path** (required in output):
+
+| Input | Trough Value | Fiscal Year | FMP Data Point |
+|-------|-------------|-------------|----------------|
+| Revenue | ${value} | FY{year} | income statement, trailing 12mo |
+| FCF Margin | {value}% | FY{year} | cashflow / income |
+| FCF Multiple | {value}x | — | Industry {baseline}x minus discounts ({detail}) |
+| Shares | {value}M | Current | metrics, diluted |
+
+The final downside_pct from Step B (or Step D if adjusted) feeds into Step 6 scoring.
 
 **Gut Check:**
 - Does implied multiple make sense vs. own 10yr history?
@@ -235,7 +279,7 @@ bash scripts/calc-score.sh size <score> <cagr_pct> <probability_pct> <downside_p
 
 For each surviving stock:
 
-1. **Estimate downside %** (from worst case in Step 5)
+1. **Use downside %** from the trough-anchored worst case in Step 5 (floor_price output from calc-score.sh floor, or analyst-adjusted value if Step D applied)
 2. **Assign base case probability** using banding discipline (see scoring-formulas.md "Probability Banding"):
    - Read sector Q6 turnaround base rate (e.g., "4 of 7 recovered → ~57% → 60% band")
    - If no sector knowledge or no Q6 precedents: default to **50%** band
@@ -319,7 +363,17 @@ Return results as structured markdown:
 - Shares: {n} ({buyback/dilution trend})
 - **Price Target: ${target}** ({n}% CAGR over {n} years)
 
-**Worst Case:** ${floor} ({n}% downside) — {scenario description}
+**Worst Case (Trough-Anchored):**
+- Floor command: `calc-score.sh floor {rev_b} {margin} {multiple} {shares} {price}` → ${floor_price} ({n}% downside)
+- TBV cross-check: TBV/share ${tbv} — {flag or "no flag"}
+- Adjustment: {None / Harsher: {reason} / More optimistic: {justification} — HEROIC OPTIMISM FLAG}
+- **Trough Path:**
+  | Input | Trough Value | Fiscal Year | FMP Data Point |
+  |-------|-------------|-------------|----------------|
+  | Revenue | ${value} | FY{year} | {source} |
+  | FCF Margin | {value}% | FY{year} | {source} |
+  | FCF Multiple | {value}x | — | {discount path} |
+  | Shares | {value}M | Current | {source} |
 
 **Gut Check:** Implied {n}x P/FCF vs. historical median {n}x — {pass/concern}
 

@@ -52,17 +52,23 @@ Read these for rules and formulas:
 
 If ANY stock in the cluster has a `valuation_borderline` flag (screener estimated 25-29.9% CAGR), run this fast check BEFORE investing in Steps 3-4:
 
-1. **Pull 5-year financials**: income, metrics (2 API calls)
-2. **Calculate rolling 3-year CAGR for each of the last 3 periods** (e.g., 2021-2024, 2022-2025, 2023-2026E):
-   - Revenue CAGR
-   - FCF per share CAGR
-   - Operating margin trend (expanding/contracting)
-3. **Assess CAGR momentum:**
-   - **Strengthening** — recent CAGR > earlier CAGR, margins expanding, revenue per share accelerating. Signals successful scaling or turnaround traction. → **PROCEED** to full analysis
-   - **Flat** — CAGR roughly stable across periods, margins flat. No acceleration but no decay. → **PROCEED with caution**, note in output
-   - **Weakening** — recent CAGR < earlier CAGR, margins contracting, growth decelerating. → **EARLY EXIT** — reject with one-line reason: "Borderline CAGR with weakening momentum — no evidence of accelerating growth"
+1. **Pull 5-year revenue and FCF/share data** from income statement and metrics (2 API calls)
+2. **Run the momentum calculator** — do NOT compute CAGRs manually:
+   ```bash
+   # Revenue momentum (5 annual values, oldest to newest)
+   bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh momentum <rev_yr1> <rev_yr2> <rev_yr3> <rev_yr4> <rev_yr5>
 
-4. **Quick catalyst sniff** (for flat momentum only):
+   # FCF per share momentum
+   bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh momentum <fcf_yr1> <fcf_yr2> <fcf_yr3> <fcf_yr4> <fcf_yr5>
+   ```
+   The calculator computes rolling 3-year CAGRs and returns a deterministic `gate` verdict: `PROCEED`, `PROCEED_WITH_CAUTION`, or `EARLY_EXIT`.
+
+3. **Apply the gate verdict:**
+   - Both metrics `PROCEED` → full analysis
+   - Either metric `PROCEED_WITH_CAUTION` → check for catalysts (step 4 below), then decide
+   - Either metric `EARLY_EXIT` → reject with the calculator's reasoning. Show the JSON output.
+
+4. **Quick catalyst sniff** (for PROCEED_WITH_CAUTION only):
    ```bash
    bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "recent catalysts or turnaround initiatives for TICKER in the last 6 months"
    ```
@@ -183,7 +189,7 @@ CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 **CRITICAL — Hurdle Rate Discipline:**
 - The 30% CAGR hurdle applies to your BASE CASE valuation — the scenario you believe is most likely
 - If base case CAGR < 30%, the stock is an AUTOMATIC FAIL unless the 20%+ exception clearly applies
-- For 20-29.9% exception candidates: still complete ALL analysis steps — the human reviewer needs full context to decide
+- For 20-29.9% exception candidates: still complete ALL analysis steps — the human reviewer needs full context to decide. Note: calc-score.sh will return `size: 0%` (CAGR < 30% hard cap) — this is expected. Annotate as: "Size: 0% (auto — pending human exception approval)"
 - Do NOT use bull case CAGR to bypass the hurdle. Bull cases are supplementary context only
 - "An investable idea should be obvious." If the valuation requires heroic assumptions, it isn't obvious enough
 

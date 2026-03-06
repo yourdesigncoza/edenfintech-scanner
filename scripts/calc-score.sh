@@ -34,6 +34,11 @@ Commands:
       Apply PCS multiplier to base probability. Returns effective probability.
       Confidence must be 1-5.
 
+  momentum <val1> <val2> <val3> <val4> <val5>
+      Assess CAGR momentum from 5 annual data points (oldest to newest).
+      Computes rolling 3-year CAGRs and determines trend direction.
+      Use for revenue, FCF/share, or any annual metric.
+
   help
       Show this help text.
 
@@ -46,6 +51,7 @@ Examples:
   bash calc-score.sh size 63.3 39 65 30 3      # with confidence cap
   bash calc-score.sh size 63.3 39 65 30 3 binary  # with binary override
   bash calc-score.sh effective-prob 65 3        # → 55.25%
+  bash calc-score.sh momentum 1100 1000 950 1050 1150  # 5yr revenue trend
 EOF
 }
 
@@ -59,6 +65,17 @@ validate_number() {
     if ! python3 -c "float('$val')" 2>/dev/null; then
         err "$name must be a number, got: $val"
     fi
+}
+
+validate_pct() {
+    local name="$1" val="$2"
+    validate_number "$name" "$val"
+    python3 -c "
+v = float('$val')
+if v > 0 and v < 1:
+    import sys
+    print(f'WARNING: {\"$name\"} = {v} looks like a decimal — expected percentage (e.g., 30 not 0.30)', file=sys.stderr)
+"
 }
 
 PCS_MULTIPLIER_PY='
@@ -97,9 +114,9 @@ print(json.dumps({
 
 score)
     [[ $# -ge 3 && $# -le 4 ]] || err "score requires 3-4 args: <downside_pct> <probability_pct> <cagr_pct> [confidence]"
-    validate_number "downside_pct" "$1"
-    validate_number "probability_pct" "$2"
-    validate_number "cagr_pct" "$3"
+    validate_pct "downside_pct" "$1"
+    validate_pct "probability_pct" "$2"
+    validate_pct "cagr_pct" "$3"
     [[ $# -ge 4 ]] && validate_number "confidence" "$4"
 
     python3 -c "
@@ -212,9 +229,9 @@ print(json.dumps({
 size)
     [[ $# -ge 4 && $# -le 6 ]] || err "size requires 4-6 args: <score> <cagr_pct> <probability_pct> <downside_pct> [confidence] [binary]"
     validate_number "score" "$1"
-    validate_number "cagr_pct" "$2"
-    validate_number "probability_pct" "$3"
-    validate_number "downside_pct" "$4"
+    validate_pct "cagr_pct" "$2"
+    validate_pct "probability_pct" "$3"
+    validate_pct "downside_pct" "$4"
     [[ $# -ge 5 ]] && validate_number "confidence" "$5"
 
     python3 -c "
@@ -323,6 +340,81 @@ if confidence is not None:
 if binary_override is not None:
     result['binary_override'] = binary_override
     result['binary_override_reason'] = f'non-binary outcome + confidence {confidence}/5 ≤ 3 → max 5%'
+
+print(json.dumps(result, indent=2))
+"
+    ;;
+
+momentum)
+    [[ $# -eq 5 ]] || err "momentum requires 5 args: <val1> <val2> <val3> <val4> <val5> (oldest to newest)"
+    for i in 1 2 3 4 5; do
+        validate_number "val$i" "${!i}"
+    done
+
+    python3 -c "
+import json
+
+vals = [float('$1'), float('$2'), float('$3'), float('$4'), float('$5')]
+
+# Rolling 3-year CAGRs: periods [0-2], [1-3], [2-4]
+def cagr_3yr(start, end):
+    if start <= 0:
+        return None  # can't compute CAGR from zero/negative base
+    return round(((end / start) ** (1.0 / 3.0) - 1) * 100, 2)
+
+period1 = cagr_3yr(vals[0], vals[2])  # year 1 to year 3
+period2 = cagr_3yr(vals[1], vals[3])  # year 2 to year 4
+period3 = cagr_3yr(vals[2], vals[4])  # year 3 to year 5
+
+cagrs = [p for p in [period1, period2, period3] if p is not None]
+
+if len(cagrs) < 2:
+    trend = 'insufficient_data'
+    reasoning = 'Cannot compute enough rolling CAGRs (zero/negative base values)'
+elif cagrs[-1] > cagrs[0] + 2:
+    trend = 'strengthening'
+    reasoning = f'Latest rolling CAGR ({cagrs[-1]}%) > earliest ({cagrs[0]}%) by {round(cagrs[-1] - cagrs[0], 2)}pp'
+elif cagrs[-1] < cagrs[0] - 2:
+    trend = 'weakening'
+    reasoning = f'Latest rolling CAGR ({cagrs[-1]}%) < earliest ({cagrs[0]}%) by {round(cagrs[0] - cagrs[-1], 2)}pp'
+elif all(c < 0 for c in cagrs):
+    trend = 'weakening'
+    reasoning = f'All rolling CAGRs negative ({cagrs[0]}% to {cagrs[-1]}%) — persistent decline'
+else:
+    trend = 'flat'
+    reasoning = f'Rolling CAGRs within 2pp band ({cagrs[0]}% to {cagrs[-1]}%)'
+
+# Also check direction of last 2 years (simple growth)
+yoy_latest = round(((vals[4] / vals[3]) - 1) * 100, 2) if vals[3] > 0 else None
+yoy_prior = round(((vals[3] / vals[2]) - 1) * 100, 2) if vals[2] > 0 else None
+
+result = {
+    'values': vals,
+    'rolling_cagr_pct': {
+        'period_1_to_3': period1,
+        'period_2_to_4': period2,
+        'period_3_to_5': period3,
+    },
+    'yoy_growth_pct': {
+        'latest': yoy_latest,
+        'prior': yoy_prior,
+    },
+    'trend': trend,
+    'reasoning': reasoning,
+}
+
+# Gate recommendation for borderline stocks
+if trend == 'strengthening':
+    result['gate'] = 'PROCEED'
+elif trend == 'flat':
+    result['gate'] = 'PROCEED_WITH_CAUTION'
+    result['note'] = 'Flat momentum — check for catalysts before full analysis'
+elif trend == 'weakening':
+    result['gate'] = 'EARLY_EXIT'
+    result['note'] = 'Borderline CAGR with weakening momentum — no evidence of accelerating growth'
+else:
+    result['gate'] = 'PROCEED_WITH_CAUTION'
+    result['note'] = 'Insufficient data for momentum assessment'
 
 print(json.dumps(result, indent=2))
 "

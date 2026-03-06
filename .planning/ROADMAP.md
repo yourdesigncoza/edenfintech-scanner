@@ -10,7 +10,7 @@ Anchor the worst-case downside estimation (45% of score weight) to historical FM
 - Integer phases (1, 2, 3): Planned milestone work
 - Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 1: Calculator** - Add `floor` command to calc-score.sh for mechanical worst-case floor price
+- [x] **Phase 1: Calculator** - Add `floor` command to calc-score.sh for mechanical worst-case floor price
 - [ ] **Phase 2: Knowledge Files** - Document trough-anchored worst case spec across strategy-rules, valuation-guidelines, scoring-formulas, and CLAUDE.md
 - [ ] **Phase 3: Agent Integration** - Wire analyst structured worst-case process and orchestrator compliance audit
 
@@ -27,7 +27,7 @@ Anchor the worst-case downside estimation (45% of score weight) to historical FM
 **Plans**: 1 plan
 
 Plans:
-- [ ] 01-01: Implement floor command in calc-score.sh (help text, command logic, edge case handling, tests)
+- [x] 01-01: Implement floor command in calc-score.sh (help text, command logic, edge case handling, tests)
 
 ### Phase 2: Knowledge Files
 **Goal**: All knowledge files consistently document the trough-anchored worst case specification so agents have a single source of truth
@@ -65,6 +65,6 @@ Phases 1 and 2 can execute in parallel. Phase 3 depends on both.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Calculator | 0/1 | Not started | - |
+| 1. Calculator | 1/1 | Complete | 2026-03-06 |
 | 2. Knowledge Files | 0/1 | Not started | - |
 | 3. Agent Integration | 0/2 | Not started | - |

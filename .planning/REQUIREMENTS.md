@@ -9,9 +9,9 @@ Requirements for this implementation. Each maps to roadmap phases.
 
 ### Calculator
 
-- [ ] **CALC-01**: `calc-score.sh floor` command accepts trough revenue, margin, multiple, shares, and current price -- returns floor price and downside %
-- [ ] **CALC-02**: `calc-score.sh floor` returns structured JSON matching existing calc-score.sh output patterns
-- [ ] **CALC-03**: `calc-score.sh floor` validates inputs and handles edge cases (zero margin, negative values)
+- [x] **CALC-01**: `calc-score.sh floor` command accepts trough revenue, margin, multiple, shares, and current price -- returns floor price and downside %
+- [x] **CALC-02**: `calc-score.sh floor` returns structured JSON matching existing calc-score.sh output patterns
+- [x] **CALC-03**: `calc-score.sh floor` validates inputs and handles edge cases (zero margin, negative values)
 
 ### Analyst Agent
 
@@ -54,9 +54,9 @@ Deferred to future work. Tracked but not in current scope.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CALC-01 | Phase 1 | Pending |
-| CALC-02 | Phase 1 | Pending |
-| CALC-03 | Phase 1 | Pending |
+| CALC-01 | Phase 1 | Complete |
+| CALC-02 | Phase 1 | Complete |
+| CALC-03 | Phase 1 | Complete |
 | KNOW-01 | Phase 2 | Pending |
 | KNOW-02 | Phase 2 | Pending |
 | KNOW-03 | Phase 2 | Pending |
@@ -76,4 +76,4 @@ Deferred to future work. Tracked but not in current scope.
 
 ---
 *Requirements defined: 2026-03-06*
-*Last updated: 2026-03-06 after initial definition*
+*Last updated: 2026-03-06 after Phase 1 completion*

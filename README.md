@@ -1,13 +1,13 @@
 # EdenFinTech Scanner
 
-Claude Code plugin for NYSE deep value turnaround scanning. Multi-agent pipeline: screener filters broken-chart stocks through quantitative checks, then parallel analysts score survivors on valuation, catalysts, and moats. Outputs ranked reports with position sizing.
+NYSE deep value turnaround scanner. Multi-agent pipeline: screener filters broken-chart stocks through quantitative checks, then parallel analysts score survivors on valuation, catalysts, and moats. Outputs ranked reports with position sizing.
 
 ## Setup
 
-1. Install as a Claude Code plugin
+1. Clone this repo and open it in Claude Code
 2. Get an API key from [Financial Modeling Prep](https://financialmodelingprep.com/developer/docs/)
-3. Set `FMP_API_KEY` in `$SCANNER_DATA_DIR/.env` (or plugin root `.env`)
-4. Optional: set `MASSIVE_API_KEY` for SEC risk factor enrichment ([massive.com](https://massive.com/dashboard/api-keys))
+3. Set `FMP_API_KEY` in `data/.env`
+4. Optional: set `GEMINI_API_KEY` for web-grounded research, `MASSIVE_API_KEY` for SEC risk factors
 
 | Scan Type | API Calls | Tier Needed |
 |-----------|-----------|-------------|
@@ -19,7 +19,7 @@ Claude Code plugin for NYSE deep value turnaround scanning. Multi-agent pipeline
 
 ### 1. Hydrate sector knowledge (one-time per sector)
 
-Pre-load sector-specific valuation approaches, turnaround precedents, and risk profiles. This makes scan analysis significantly better. Requires Perplexity MCP.
+Pre-load sector-specific valuation approaches, turnaround precedents, and risk profiles. This makes scan analysis significantly better. Requires Gemini API key.
 
 ```
 /sector-hydrate Banking
@@ -39,7 +39,7 @@ Output: `knowledge/sectors/<sector-slug>/` — checked into the repo, reused acr
 
 ### 3. Read the report
 
-Reports save to `$SCANNER_DATA_DIR/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md`.
+Reports save to `data/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md`.
 
 Each report contains:
 - Executive summary with ranked candidates
@@ -85,7 +85,7 @@ After major changes to knowledge files, agents, or scoring logic:
 /gemini-review
 ```
 
-Produces a structured audit report with severity-rated findings, stress tests, and a confidence score. Saved to `$SCANNER_DATA_DIR/result/`.
+Produces a structured audit report with severity-rated findings, stress tests, and a confidence score. Saved to `data/result/`.
 
 ## How It Works
 

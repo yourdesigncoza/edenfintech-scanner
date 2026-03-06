@@ -8,20 +8,11 @@
 
 set -euo pipefail
 
-# Load config — same chain as fmp-api.sh
+# Load config
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
-
-if [[ -f "$PLUGIN_ROOT/.env" ]]; then
-    source "$PLUGIN_ROOT/.env"
-fi
-if [[ -z "${SCANNER_DATA_DIR:-}" && -f "$HOME/.config/edenfintech-scanner/.env" ]]; then
-    source "$HOME/.config/edenfintech-scanner/.env"
-fi
-DATA_DIR_ENV="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}/.env"
-if [[ -f "$DATA_DIR_ENV" ]]; then
-    source "$DATA_DIR_ENV"
-fi
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DATA_DIR="$PROJECT_ROOT/data"
+if [[ -f "$DATA_DIR/.env" ]]; then source "$DATA_DIR/.env"; fi
 
 # Fallback: read from user-level Claude config (where MCP server has it)
 if [[ -z "${PERPLEXITY_API_KEY:-}" ]]; then
@@ -38,14 +29,13 @@ fi
 
 if [[ -z "${PERPLEXITY_API_KEY:-}" ]]; then
     echo "ERROR: PERPLEXITY_API_KEY not set."
-    echo "Add to: ${SCANNER_DATA_DIR:-.}/.env or configure via 'claude mcp add perplexity'"
+    echo "Add to: data/.env or configure via 'claude mcp add perplexity'"
     exit 1
 fi
 
 API_URL="https://api.perplexity.ai/chat/completions"
 
 # --- Caching ---
-DATA_DIR="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}"
 CACHE_DIR="$DATA_DIR/cache/perplexity"
 CACHE_TTL_DAYS=1
 mkdir -p "$CACHE_DIR"

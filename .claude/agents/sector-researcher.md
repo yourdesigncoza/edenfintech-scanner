@@ -26,7 +26,7 @@ For each sub-sector, run all 8 queries below using the 2-phase approach describe
 **Phase A — Gemini (cited facts):**
 1. **Fire all 8 queries in parallel** — invoke the Gemini API script 8 separate times as parallel Bash tool calls. Each returns cited facts with inline source URLs — no separate WebFetch step needed.
    ```bash
-   bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "your query here"
+   bash scripts/gemini-search.sh ask "your query here"
    ```
 2. **Save raw Gemini output** immediately (one file per query: `q1-structure.md`, `q2-regulatory.md`, etc.) to `{data_dir}/research/sectors/{sector-slug}/{sub-sector-slug}/`.
 3. If `gemini-search.sh` fails for a query, fall back to `WebSearch` directly.
@@ -118,7 +118,7 @@ No historical turnaround precedents exist for this sub-sector.
 
 **403 fallback** (for URLs that WebFetch cannot access — SEC EDGAR, FDIC, Federal Reserve):
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "Read https://blocked-url and extract: [targeted prompt]"
+bash scripts/gemini-search.sh ask "Read https://blocked-url and extract: [targeted prompt]"
 ```
 Gemini can access sites that block WebFetch. Use a targeted extraction prompt specific to what you need, not a generic summary request.
 
@@ -128,7 +128,7 @@ Gemini can access sites that block WebFetch. Use a targeted extraction prompt sp
 
 **Query 1 — Structure:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} revenue model, capital intensity, margin profiles, FCF cyclicality, competitive dynamics, and barriers to entry.
 Cite every company name, date, dollar figure, and percentage with a source URL."
@@ -136,7 +136,7 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 **Query 2 — Regulatory Risk:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} US regulators, jurisdiction, regulatory risk, binary enforcement actions, and historical interventions.
 Cite every company name, date, dollar figure, and percentage with a source URL."
@@ -144,7 +144,7 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 **Query 3 — Macro Sensitivity:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} macro sensitivity to interest rates, credit cycle, inflation, unemployment, yield curve, and trade policy.
 Cite every company name, date, dollar figure, and percentage with a source URL."
@@ -152,7 +152,7 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 **Query 4 — Failure Patterns:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} historical failures, bankruptcies, and distress events (operational, liquidity, regulatory, fraud) in the last 40 years.
 Cite every company name, date, dollar figure, and percentage with a source URL."
@@ -160,7 +160,7 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 **Query 5 — Binary Triggers:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} binary risk triggers: regulatory shutdown, capital failure, liquidity crisis, sudden value destruction.
 Cite every company name, date, dollar figure, and percentage with a source URL."
@@ -168,7 +168,7 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 **Query 6 — Turnaround Precedents:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} turnaround examples: companies that recovered from fundamental distress (not sector-wide panic selloffs).
 Turnaround = fundamental distress only: NPL>5%, CAMELS 4-5 rating, capital ratio <4%, or active enforcement action. Do NOT include sector-wide panic selloffs (SVB contagion 2023, GFC fear 2008) as turnarounds — those are price dislocations, not distress recoveries.
@@ -178,7 +178,7 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 **Query 7 — Epistemic Profile:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} outcome predictability, risk classification, regulatory discretion level, binary outcome frequency, and macro exposure.
 Cite every company name, date, dollar figure, and percentage with a source URL."
@@ -186,7 +186,7 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 
 **Query 8 — Valuation Benchmarks:**
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} valuation methodology: FCF multiples, EV/EBITDA, P/TBV — typical ranges, industry benchmarks, and when standard methods don't apply.
 Cite every company name, date, dollar figure, and percentage with a source URL."
@@ -247,17 +247,17 @@ For sector-wide regulatory research:
 
 1. **Run 3 Gemini queries** (fire in parallel):
 ```
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations.
 {sector} US regulatory bodies, jurisdiction, authority, rules-based vs discretionary frameworks, and requirements.
 Cite every regulator name, statute, and enforcement mechanism with a source URL."
 
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sector} regulatory enforcement actions and precedents in the last 10 years: company names, violations, outcomes.
 Cite every company name, date, and enforcement action with a source URL."
 
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask \
+bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations.
 {sector} upcoming regulatory changes 2025-2027: proposed rules, expected impact, implementation timelines.
 Cite every proposed rule, agency, and date with a source URL."
@@ -289,7 +289,7 @@ Cite every proposed rule, agency, and date with a source URL."
 - Gemini returns cited facts directly — no separate WebFetch step needed (unlike source-discovery approaches)
 - Preserve source URLs inline in final output — every factual claim should trace to a source URL
 - If a site blocks WebFetch (403), use Gemini with the URL and a targeted extraction prompt — Gemini can access SEC EDGAR, FDIC, and Federal Reserve sites:
-  `bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "Read https://blocked-url and extract: ..."`
+  `bash scripts/gemini-search.sh ask "Read https://blocked-url and extract: ..."`
 - If both Gemini and WebFetch fail (paywall, login required), skip and try the next source
 - If a query returns nothing useful after fallback, write "Insufficient data" in that section — do NOT fabricate
 - Do NOT invent data, companies, dates, or metrics. If uncertain, say so.

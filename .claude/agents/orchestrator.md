@@ -31,7 +31,7 @@ You are the EdenFinTech Orchestrator — the coordinator of the stock scanning p
 
 Read these at the start of every scan. Resolve knowledge path first:
 ```bash
-KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+KNOWLEDGE_DIR=$(bash scripts/fmp-api.sh knowledge-dir)
 ```
 - `$KNOWLEDGE_DIR/current-portfolio.md` — Current holdings for portfolio impact checks
 - `$KNOWLEDGE_DIR/scoring-formulas.md` — For final ranking and deployment scenario analysis
@@ -53,7 +53,7 @@ Spawn the screener agent:
 Use the Task tool to launch a general-purpose agent with this prompt:
 
 "You are running the EdenFinTech screener. Read the screener agent instructions at
-${CLAUDE_PLUGIN_ROOT}/agents/screener.md and follow them exactly.
+.claude/agents/screener.md and follow them exactly.
 
 Scan parameters: {exchange} {sector or "full"}
 {any additional user parameters}
@@ -76,7 +76,7 @@ From the screener output:
 Before launching analysts, verify sector knowledge is available and fresh:
 
 ```bash
-DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
+DATA_DIR=$(bash scripts/fmp-api.sh data-dir)
 HYDRATION_FILE="$DATA_DIR/knowledge/sectors/hydration-status.json"
 STALE_DAYS=180
 ```
@@ -104,7 +104,7 @@ STALE_DAYS=180
         Use the Task tool to launch a general-purpose agent with this prompt:
 
         "You are running the EdenFinTech Sector Coordinator. Read the agent instructions at
-        ${CLAUDE_PLUGIN_ROOT}/agents/sector-coordinator.md and follow them exactly.
+        .claude/agents/sector-coordinator.md and follow them exactly.
 
         Hydrate sector: {sector_fmp_name}
 
@@ -125,7 +125,7 @@ For each cluster, spawn a parallel analyst agent:
 For EACH cluster, use the Task tool to launch a general-purpose agent with this prompt:
 
 "You are running the EdenFinTech analyst. Read the analyst agent instructions at
-${CLAUDE_PLUGIN_ROOT}/agents/analyst.md and follow them exactly.
+.claude/agents/analyst.md and follow them exactly.
 
 Analyze this industry cluster: {cluster_name}
 Stocks: {TICK1, TICK2, TICK3}
@@ -164,7 +164,7 @@ After collecting all analyst results, before the consistency audit:
 Use the Task tool to launch a general-purpose agent with this prompt:
 
 "You are running the EdenFinTech Epistemic Reviewer. Read the agent instructions at
-${CLAUDE_PLUGIN_ROOT}/agents/epistemic-reviewer.md and follow them exactly.
+.claude/agents/epistemic-reviewer.md and follow them exactly.
 
 Assess epistemic confidence for these candidates:
 
@@ -195,7 +195,7 @@ Return the structured confidence assessment for all candidates."
 
 4. **Compute effective probability** for each candidate:
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh effective-prob {base_probability} {confidence}
+bash scripts/calc-score.sh effective-prob {base_probability} {confidence}
 ```
 
 4c. **Threshold-hugging detection**: Check if the analyst's base probability is within 2% of any hard cap:
@@ -212,13 +212,13 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh effective-prob {base_probabilit
 
 6. **Recompute decision score** using effective probability:
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} {base_probability} {cagr} {confidence}
+bash scripts/calc-score.sh score {downside} {base_probability} {cagr} {confidence}
 ```
 
 7. **Recompute position size** with confidence cap:
 ```bash
 # If analyst's Q4 (non-binary) was "No", add binary flag
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh size {new_score} {cagr} {effective_probability} {downside} {confidence} [binary]
+bash scripts/calc-score.sh size {new_score} {cagr} {effective_probability} {downside} {confidence} [binary]
 ```
 
 8. **Apply binary outcome override**: If Q4 = No AND confidence ≤ 3 → cap at 5% regardless of score
@@ -242,11 +242,11 @@ Once all analysts return:
 1b. **Compute Probability Sensitivity** for each candidate using calc-score.sh:
     ```bash
     # For each candidate, run score at 55%, 60%, 65%, 70%, 75% probability
-    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 55 {cagr}
-    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 60 {cagr}
-    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 65 {cagr}
-    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 70 {cagr}
-    bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score {downside} 75 {cagr}
+    bash scripts/calc-score.sh score {downside} 55 {cagr}
+    bash scripts/calc-score.sh score {downside} 60 {cagr}
+    bash scripts/calc-score.sh score {downside} 65 {cagr}
+    bash scripts/calc-score.sh score {downside} 70 {cagr}
+    bash scripts/calc-score.sh score {downside} 75 {cagr}
     # Use the candidate's actual downside and CAGR; only probability varies
     # Map each score to its size band (and note "0% — fails hard cap" for prob < 60%)
     ```
@@ -369,7 +369,7 @@ The scan-type slug is lowercase, hyphenated, derived from the scan parameters.
 
 **Primary**: data directory (persists across plugin updates):
 ```bash
-DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
+DATA_DIR=$(bash scripts/fmp-api.sh data-dir)
 mkdir -p "$DATA_DIR/scans"
 # Write report to: $DATA_DIR/scans/{filename}
 ```
@@ -377,7 +377,7 @@ mkdir -p "$DATA_DIR/scans"
 **Secondary copies** (if directories exist):
 ```bash
 # Plugin docs (for git tracking)
-PLUGIN_DOCS="${CLAUDE_PLUGIN_ROOT}/docs/scans"
+PLUGIN_DOCS="docs/scans"
 mkdir -p "$PLUGIN_DOCS"
 cp "$DATA_DIR/scans/{filename}" "$PLUGIN_DOCS/{filename}"
 
@@ -404,7 +404,7 @@ If `MASSIVE_API_KEY` is not configured or command returns `SKIP`, skip this step
 
 3. **Only after user approves**, fetch risk factors for approved tickers:
    ```bash
-   bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh risk-factors TICKER
+   bash scripts/fmp-api.sh risk-factors TICKER
    ```
 
 4. For each hydrated candidate, analyze:

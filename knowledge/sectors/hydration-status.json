@@ -1,0 +1,16 @@
+{
+  "updated": "2026-03-06",
+  "sectors": {
+    "Consumer Defensive": {
+      "status": "hydrated",
+      "hydrated_date": "2026-03-06",
+      "stale_after_days": 180,
+      "sub_sectors": [
+        "Beverages - Alcoholic",
+        "Beverages - Wineries & Distilleries",
+        "Packaged Foods",
+        "Household & Personal Products"
+      ]
+    }
+  }
+}

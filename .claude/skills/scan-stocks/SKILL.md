@@ -21,12 +21,12 @@ Parse the user's input to determine scan type:
 Before running, verify the FMP API key is configured:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh help
+bash scripts/fmp-api.sh help
 ```
 
 If the key is not set, instruct the user:
 1. Get a free API key at https://financialmodelingprep.com/developer/docs/
-2. Edit `${CLAUDE_PLUGIN_ROOT}/.env` and set `FMP_API_KEY=your_key`
+2. Edit `data/.env` and set `FMP_API_KEY=your_key`
 3. Free tier (250 calls/day) supports sector scans. Full NYSE scans need paid tier.
 
 ## Execution
@@ -37,7 +37,7 @@ Spawn the orchestrator agent to run the full pipeline:
 Use the Task tool with subagent_type "general-purpose" and this prompt:
 
 "You are the EdenFinTech Orchestrator. Read your instructions at
-${CLAUDE_PLUGIN_ROOT}/agents/orchestrator.md and follow them exactly.
+.claude/agents/orchestrator.md and follow them exactly.
 
 Scan type: {full | sector: NAME | tickers: TICK1,TICK2,...}
 User request: {original user message}

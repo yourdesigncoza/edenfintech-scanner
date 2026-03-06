@@ -9,18 +9,9 @@ set -euo pipefail
 
 # Load config
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
-
-if [[ -f "$PLUGIN_ROOT/.env" ]]; then
-    source "$PLUGIN_ROOT/.env"
-fi
-if [[ -z "${SCANNER_DATA_DIR:-}" && -f "$HOME/.config/edenfintech-scanner/.env" ]]; then
-    source "$HOME/.config/edenfintech-scanner/.env"
-fi
-DATA_DIR_ENV="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}/.env"
-if [[ -f "$DATA_DIR_ENV" ]]; then
-    source "$DATA_DIR_ENV"
-fi
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DATA_DIR="$PROJECT_ROOT/data"
+if [[ -f "$DATA_DIR/.env" ]]; then source "$DATA_DIR/.env"; fi
 
 # Fallback: read from Claude MCP config
 if [[ -z "${GEMINI_API_KEY:-}" ]]; then
@@ -52,13 +43,12 @@ if [[ "$COMMAND" == "help" ]]; then
     :
 elif [[ -z "${GEMINI_API_KEY:-}" ]]; then
     echo "ERROR: GEMINI_API_KEY not set."
-    echo "Add to: ${SCANNER_DATA_DIR:-.}/.env"
+    echo "Add to: data/.env"
     echo "Get your key at: https://aistudio.google.com/apikey"
     exit 1
 fi
 
 # --- Caching & Usage Tracking ---
-DATA_DIR="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}"
 CACHE_DIR="$DATA_DIR/cache/gemini-search"
 USAGE_DIR="$DATA_DIR/cache/gemini-search/usage"
 CACHE_TTL_DAYS=1
@@ -334,7 +324,7 @@ case "$COMMAND" in
         echo "  bash gemini-search.sh ask --model pro \"EL Beauty Reimagined turnaround progress 2026\""
         echo ""
         echo "Environment: GEMINI_API_KEY required (auto-reads from ~/.claude.json MCP config)"
-        echo "Cache: \$SCANNER_DATA_DIR/cache/gemini-search/ (1-day TTL, --fresh to bypass)"
+        echo "Cache: data/cache/gemini-search/ (1-day TTL, --fresh to bypass)"
         echo "Free tier: 500 req/day (Flash), 1500 req/day (Pro)"
         ;;
 

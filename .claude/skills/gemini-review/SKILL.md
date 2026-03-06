@@ -32,7 +32,7 @@ fi
 - If no previous tag: this is a **full baseline review** (review everything)
 - If tag exists: focus the review on what changed, plus a coherence check of the whole system
 
-Read the current version from `.claude-plugin/marketplace.json` — use the `metadata.version` field as `VERSION` for the report filename and tag.
+Read the current version from the `## Scoring Formula Quick Reference` section header or CLAUDE.md. Use it as `VERSION` for the report filename and tag.
 
 ## Step 2: Compile Review Input Document
 
@@ -60,7 +60,7 @@ Cap at 500 lines of diff. If larger, include stats + the most important file dif
 
 ### Section 3: Knowledge Files (full content)
 
-Resolve knowledge path: `KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)`. Read and include the complete content of each:
+Resolve knowledge path: `KNOWLEDGE_DIR=$(bash scripts/fmp-api.sh knowledge-dir)`. Read and include the complete content of each:
 - `$KNOWLEDGE_DIR/strategy-rules.md`
 - `$KNOWLEDGE_DIR/scoring-formulas.md`
 - `$KNOWLEDGE_DIR/valuation-guidelines.md`
@@ -70,20 +70,20 @@ Resolve knowledge path: `KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-
 ### Section 4: Agent Definitions (full content)
 
 Read and include:
-- `${CLAUDE_PLUGIN_ROOT}/agents/orchestrator.md`
-- `${CLAUDE_PLUGIN_ROOT}/agents/screener.md`
-- `${CLAUDE_PLUGIN_ROOT}/agents/analyst.md`
-- `${CLAUDE_PLUGIN_ROOT}/agents/epistemic-reviewer.md`
+- `.claude/agents/orchestrator.md`
+- `.claude/agents/screener.md`
+- `.claude/agents/analyst.md`
+- `.claude/agents/epistemic-reviewer.md`
 
 Include any NEW agent files not in this list.
 
 ### Section 5: Calculator Script (full content)
 
-- `${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh`
+- `scripts/calc-score.sh`
 
 ### Section 6: Previous Review Findings
 
-Resolve the data directory: `DATA_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)`. Read the most recent `$DATA_DIR/result/gemini-v*-deep-review.md` file and include its **Critical Findings Summary** table and **Overall Confidence** score. If no previous review exists, note "First review — no prior findings."
+Resolve the data directory: `DATA_DIR=$(bash scripts/fmp-api.sh data-dir)`. Read the most recent `$DATA_DIR/result/gemini-v*-deep-review.md` file and include its **Critical Findings Summary** table and **Overall Confidence** score. If no previous review exists, note "First review — no prior findings."
 
 ### Section 7: Review Instructions
 

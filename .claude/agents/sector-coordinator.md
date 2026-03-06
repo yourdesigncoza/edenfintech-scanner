@@ -13,7 +13,7 @@ You are the EdenFinTech Sector Coordinator — you orchestrate the hydration of 
 
 Resolve knowledge path first:
 ```bash
-KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+KNOWLEDGE_DIR=$(bash scripts/fmp-api.sh knowledge-dir)
 ```
 
 Read at start:
@@ -34,7 +34,7 @@ You receive:
 
 1. **Discover sub-sectors from FMP data:**
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh screener NYSE "{FMP Sector}"
+bash scripts/fmp-api.sh screener NYSE "{FMP Sector}"
 ```
 Parse the JSON output and extract unique `industry` values. These are the natural sub-sector boundaries.
 
@@ -42,7 +42,7 @@ Parse the JSON output and extract unique `industry` values. These are the natura
 
 3. **Search for GICS mapping:**
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "GICS sub-sector structure for {sector}: list all industry groups, industries, and sub-industries. For each provide the GICS code and 2-3 representative NYSE-listed companies. Return as a structured table with inline source citations."
+bash scripts/gemini-search.sh ask "GICS sub-sector structure for {sector}: list all industry groups, industries, and sub-industries. For each provide the GICS code and 2-3 representative NYSE-listed companies. Return as a structured table with inline source citations."
 ```
 
 4. **Cross-reference** FMP industries with GICS structure from the Gemini response. Map each FMP industry string to its GICS equivalent.
@@ -78,7 +78,7 @@ Spawn researcher agents in parallel:
 Use the Agent tool with subagent_type "general-purpose" and this prompt:
 
 "You are an EdenFinTech Sector Researcher. Read your instructions at
-${CLAUDE_PLUGIN_ROOT}/agents/sector-researcher.md and follow them exactly.
+.claude/agents/sector-researcher.md and follow them exactly.
 
 Research type: sub-sector
 Sector: {sector name}
@@ -97,7 +97,7 @@ Run all 8 research queries per sub-sector and produce the structured output file
 Use the Agent tool with subagent_type "general-purpose" and this prompt:
 
 "You are an EdenFinTech Sector Researcher. Read your instructions at
-${CLAUDE_PLUGIN_ROOT}/agents/sector-researcher.md and follow them exactly.
+.claude/agents/sector-researcher.md and follow them exactly.
 
 Research type: regulatory
 Sector: {sector name}

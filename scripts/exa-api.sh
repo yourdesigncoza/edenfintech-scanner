@@ -9,20 +9,11 @@
 
 set -euo pipefail
 
-# Load config — same chain as fmp-api.sh / perplexity-api.sh
+# Load config
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
-
-if [[ -f "$PLUGIN_ROOT/.env" ]]; then
-    source "$PLUGIN_ROOT/.env"
-fi
-if [[ -z "${SCANNER_DATA_DIR:-}" && -f "$HOME/.config/edenfintech-scanner/.env" ]]; then
-    source "$HOME/.config/edenfintech-scanner/.env"
-fi
-DATA_DIR_ENV="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}/.env"
-if [[ -f "$DATA_DIR_ENV" ]]; then
-    source "$DATA_DIR_ENV"
-fi
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DATA_DIR="$PROJECT_ROOT/data"
+if [[ -f "$DATA_DIR/.env" ]]; then source "$DATA_DIR/.env"; fi
 
 # --- Parse global flags and command before API key check ---
 FRESH=false
@@ -39,13 +30,12 @@ if [[ "$COMMAND" == "help" ]]; then
     :
 elif [[ -z "${EXA_API_KEY:-}" ]]; then
     echo "ERROR: EXA_API_KEY not set."
-    echo "Add to: ${SCANNER_DATA_DIR:-.}/.env"
+    echo "Add to: data/.env"
     echo "Get your key at: https://dashboard.exa.ai/api-keys"
     exit 1
 fi
 
 # --- Caching ---
-DATA_DIR="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}"
 CACHE_DIR="$DATA_DIR/cache/exa"
 CACHE_TTL_DAYS=1
 mkdir -p "$CACHE_DIR"
@@ -312,8 +302,8 @@ case "$COMMAND" in
         echo "  bash exa-api.sh deep \"Consumer defensive turnaround precedents last 5 years\""
         echo "  bash exa-api.sh contents '[\"https://sec.gov/filing/123\"]'"
         echo ""
-        echo "Environment: EXA_API_KEY required in \$SCANNER_DATA_DIR/.env"
-        echo "Cache: \$SCANNER_DATA_DIR/cache/exa/ (1-day TTL, --fresh to bypass)"
+        echo "Environment: EXA_API_KEY required in data/.env"
+        echo "Cache: data/cache/exa/ (1-day TTL, --fresh to bypass)"
         echo "Requires: pip3 install exa-py"
         ;;
 

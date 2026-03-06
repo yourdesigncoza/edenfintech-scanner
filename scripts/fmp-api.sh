@@ -4,26 +4,15 @@
 
 set -euo pipefail
 
-# Load config — plugin root .env first, then persistent user config, then data dir .env (for API keys)
+# Load config
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PLUGIN_ROOT="$(dirname "$SCRIPT_DIR")"
-
-if [[ -f "$PLUGIN_ROOT/.env" ]]; then
-    source "$PLUGIN_ROOT/.env"
-fi
-# Persistent user config — survives plugin cache refreshes
-if [[ -z "${SCANNER_DATA_DIR:-}" && -f "$HOME/.config/edenfintech-scanner/.env" ]]; then
-    source "$HOME/.config/edenfintech-scanner/.env"
-fi
-# Data dir .env — preferred location for API keys
-DATA_DIR_ENV="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}/.env"
-if [[ -f "$DATA_DIR_ENV" ]]; then
-    source "$DATA_DIR_ENV"
-fi
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DATA_DIR="$PROJECT_ROOT/data"
+if [[ -f "$DATA_DIR/.env" ]]; then source "$DATA_DIR/.env"; fi
 
 if [[ -z "${FMP_API_KEY:-}" || "$FMP_API_KEY" == "your_api_key_here" ]]; then
     echo "ERROR: FMP_API_KEY not set."
-    echo "Add your API keys to: ${SCANNER_DATA_DIR:-.}/.env (preferred) or $PLUGIN_ROOT/.env"
+    echo "Add your API keys to: data/.env"
     echo "Get a key at: https://financialmodelingprep.com/developer/docs/"
     exit 1
 fi
@@ -32,7 +21,6 @@ BASE="https://financialmodelingprep.com/stable"
 MASSIVE_BASE="https://api.massive.com"
 
 # --- Caching setup ---
-DATA_DIR="${SCANNER_DATA_DIR:-$PLUGIN_ROOT/data}"
 CACHE_DIR="$DATA_DIR/cache"
 
 # Parse --fresh flag
@@ -318,16 +306,8 @@ if isinstance(data, list):
         ;;
 
     # Usage: fmp-api.sh knowledge-dir
-    # Returns knowledge directory path, syncing new/updated files from plugin on each call
     knowledge-dir)
-        KNOWLEDGE_DIR="$DATA_DIR/knowledge"
-        (
-            flock -x 200 2>/dev/null || true
-            mkdir -p "$KNOWLEDGE_DIR"
-            # -u = only copy if source is newer; preserves user edits to existing files
-            cp -ru "$PLUGIN_ROOT/knowledge/"* "$KNOWLEDGE_DIR/" 2>/dev/null || true
-        ) 200>"$DATA_DIR/.knowledge.lock" 2>/dev/null
-        echo "$KNOWLEDGE_DIR"
+        echo "$PROJECT_ROOT/knowledge"
         ;;
 
     help|*)
@@ -361,12 +341,11 @@ if isinstance(data, list):
         echo "  cache-status                  Show cache stats (fresh/stale/size)"
         echo "  cache-clear [command]         Clear all cache or specific command"
         echo "  data-dir                      Show data directory path"
-        echo "  knowledge-dir                 Show knowledge directory path (auto-bootstraps)"
+        echo "  knowledge-dir                 Show knowledge directory path"
         echo ""
         echo "Cache TTLs: screener/ratios/metrics/ev=7d, profile/peers=30d,"
         echo "            income/balance/cashflow/risk-factors=90d, price-history=1d"
         echo ""
-        echo "Config: Set SCANNER_DATA_DIR in $PLUGIN_ROOT/.env or ~/.config/edenfintech-scanner/.env"
-        echo "        Set FMP_API_KEY and MASSIVE_API_KEY in \$SCANNER_DATA_DIR/.env"
+        echo "Config: Set FMP_API_KEY and MASSIVE_API_KEY in data/.env"
         ;;
 esac

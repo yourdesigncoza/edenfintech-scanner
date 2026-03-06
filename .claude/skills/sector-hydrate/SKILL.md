@@ -25,7 +25,7 @@ Parse the user's input to determine the sector:
 **HARD STOP** — Sector hydration relies entirely on the Gemini Grounded Search API. Test it first before doing anything else:
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "ping"
+bash scripts/gemini-search.sh ask "ping"
 ```
 
 **If the call fails or errors:**
@@ -36,7 +36,7 @@ Alert the user with this exact message:
 
 > **BLOCKED: Gemini Grounded Search API unavailable** — sector hydration cannot proceed.
 >
-> Fix: ensure `PERPLEXITY_API_KEY` is set in `$SCANNER_DATA_DIR/.env` or `~/.claude.json`. Then re-run `/sector-hydrate`.
+> Fix: ensure `GEMINI_API_KEY` is set in `data/.env` or `~/.claude.json`. Then re-run `/sector-hydrate`.
 
 Only continue to Sector Resolution if the Gemini Grounded Search test call returns a successful response.
 
@@ -55,7 +55,7 @@ Only continue to Sector Resolution if the Gemini Grounded Search test call retur
 
 2. **Check for existing hydration:**
 ```bash
-KNOWLEDGE_DIR=$(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)
+KNOWLEDGE_DIR=$(bash scripts/fmp-api.sh knowledge-dir)
 ls $KNOWLEDGE_DIR/sectors/<sector-slug>/_meta.md 2>/dev/null
 ```
 If exists, warn the user: "Sector `<name>` was hydrated on `<date>` (version `<n>`). Re-hydrate will overwrite. Proceed?"
@@ -68,12 +68,12 @@ Spawn the sector coordinator agent to run the hydration pipeline:
 Use the Agent tool with subagent_type "general-purpose" and this prompt:
 
 "You are the EdenFinTech Sector Coordinator. Read your instructions at
-${CLAUDE_PLUGIN_ROOT}/agents/sector-coordinator.md and follow them exactly.
+.claude/agents/sector-coordinator.md and follow them exactly.
 
 Sector: {FMP sector name}
 Scope: {narrow scope if applicable, e.g., 'Banks only — Diversified + Regional'}
-Output path: $(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh knowledge-dir)/sectors/{sector-slug}/
-Data dir: $(bash ${CLAUDE_PLUGIN_ROOT}/scripts/fmp-api.sh data-dir)
+Output path: $(bash scripts/fmp-api.sh knowledge-dir)/sectors/{sector-slug}/
+Data dir: $(bash scripts/fmp-api.sh data-dir)
 
 Run the full 3-phase hydration pipeline."
 ```

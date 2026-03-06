@@ -41,7 +41,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 02-01: Update strategy-rules.md, valuation-guidelines.md, scoring-formulas.md, and CLAUDE.md with worst-case specification
+- [x] 02-01: Update strategy-rules.md, valuation-guidelines.md, scoring-formulas.md, and CLAUDE.md with worst-case specification
 
 ### Phase 3: Agent Integration
 **Goal**: The analyst agent produces trough-anchored worst cases and the orchestrator rejects non-compliant candidates
@@ -52,11 +52,11 @@ Plans:
   2. Analyst instructions require running `calc-score.sh floor` before writing any worst-case narrative
   3. Orchestrator has a downside consistency audit step that rejects candidates missing floor calc, unresolved heroic optimism flags, or skipped TBV cross-check
   4. End-to-end test with BRBR and PYPL trough inputs produces reproducible, reasonable floor prices
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: Update analyst.md structured worst-case process and orchestrator.md downside audit
-- [ ] 03-02: End-to-end verification with BRBR and PYPL test cases
+- [ ] 03-01-PLAN.md -- Update analyst.md structured worst-case process and orchestrator.md downside audit
+- [ ] 03-02-PLAN.md -- End-to-end verification with BRBR and PYPL test cases
 
 ## Progress
 

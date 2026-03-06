@@ -24,7 +24,7 @@ Anchor the worst-case downside estimation (45% of score weight) to historical FM
   1. Running `calc-score.sh floor 2.2 7.0 10 130 17.52` returns valid JSON with floor_price and downside_pct
   2. Running the same command twice produces identical output
   3. Edge cases (zero margin, missing args, negative values) return sensible results or clear errors, never crash
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 - [ ] 01-01: Implement floor command in calc-score.sh (help text, command logic, edge case handling, tests)

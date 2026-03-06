@@ -28,10 +28,10 @@ Requirements for this implementation. Each maps to roadmap phases.
 
 ### Knowledge Files
 
-- [ ] **KNOW-01**: strategy-rules.md documents the trough-anchored worst case specification with input anchoring table and asymmetric override rule
-- [ ] **KNOW-02**: valuation-guidelines.md documents the Heroic Optimism test and TBV cross-check
-- [ ] **KNOW-03**: scoring-formulas.md documents the downside anchoring requirement
-- [ ] **KNOW-04**: CLAUDE.md references the new `floor` command
+- [x] **KNOW-01**: strategy-rules.md documents the trough-anchored worst case specification with input anchoring table and asymmetric override rule
+- [x] **KNOW-02**: valuation-guidelines.md documents the Heroic Optimism test and TBV cross-check
+- [x] **KNOW-03**: scoring-formulas.md documents the downside anchoring requirement
+- [x] **KNOW-04**: CLAUDE.md references the new `floor` command
 
 ## v2 Requirements
 
@@ -57,10 +57,10 @@ Deferred to future work. Tracked but not in current scope.
 | CALC-01 | Phase 1 | Complete |
 | CALC-02 | Phase 1 | Complete |
 | CALC-03 | Phase 1 | Complete |
-| KNOW-01 | Phase 2 | Pending |
-| KNOW-02 | Phase 2 | Pending |
-| KNOW-03 | Phase 2 | Pending |
-| KNOW-04 | Phase 2 | Pending |
+| KNOW-01 | Phase 2 | Complete |
+| KNOW-02 | Phase 2 | Complete |
+| KNOW-03 | Phase 2 | Complete |
+| KNOW-04 | Phase 2 | Complete |
 | ANLST-01 | Phase 3 | Pending |
 | ANLST-02 | Phase 3 | Pending |
 | ANLST-03 | Phase 3 | Pending |

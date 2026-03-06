@@ -15,16 +15,16 @@ Requirements for this implementation. Each maps to roadmap phases.
 
 ### Analyst Agent
 
-- [ ] **ANLST-01**: Analyst identifies trough inputs from 5yr FMP historical data already fetched in Step 3
-- [ ] **ANLST-02**: Analyst runs `calc-score.sh floor` before writing worst-case narrative -- mechanical floor is the starting point
-- [ ] **ANLST-03**: Analyst shows "trough path" tracing each input to a specific historical data point and fiscal year
-- [ ] **ANLST-04**: Asymmetric override -- analyst can freely make floor harsher (event risk), but making it more optimistic triggers "Heroic Optimism" flag
-- [ ] **ANLST-05**: Analyst cross-checks floor against tangible book value per share from FMP balance sheet
+- [x] **ANLST-01**: Analyst identifies trough inputs from 5yr FMP historical data already fetched in Step 3
+- [x] **ANLST-02**: Analyst runs `calc-score.sh floor` before writing worst-case narrative -- mechanical floor is the starting point
+- [x] **ANLST-03**: Analyst shows "trough path" tracing each input to a specific historical data point and fiscal year
+- [x] **ANLST-04**: Asymmetric override -- analyst can freely make floor harsher (event risk), but making it more optimistic triggers "Heroic Optimism" flag
+- [x] **ANLST-05**: Analyst cross-checks floor against tangible book value per share from FMP balance sheet
 
 ### Orchestrator Agent
 
-- [ ] **ORCH-01**: Orchestrator audits that each scored candidate has a trough path with anchored inputs
-- [ ] **ORCH-02**: Orchestrator rejects candidates where downside methodology is non-compliant (missing floor calc, unresolved heroic optimism flag, skipped TBV cross-check)
+- [x] **ORCH-01**: Orchestrator audits that each scored candidate has a trough path with anchored inputs
+- [x] **ORCH-02**: Orchestrator rejects candidates where downside methodology is non-compliant (missing floor calc, unresolved heroic optimism flag, skipped TBV cross-check)
 
 ### Knowledge Files
 
@@ -61,13 +61,13 @@ Deferred to future work. Tracked but not in current scope.
 | KNOW-02 | Phase 2 | Complete |
 | KNOW-03 | Phase 2 | Complete |
 | KNOW-04 | Phase 2 | Complete |
-| ANLST-01 | Phase 3 | Pending |
-| ANLST-02 | Phase 3 | Pending |
-| ANLST-03 | Phase 3 | Pending |
-| ANLST-04 | Phase 3 | Pending |
-| ANLST-05 | Phase 3 | Pending |
-| ORCH-01 | Phase 3 | Pending |
-| ORCH-02 | Phase 3 | Pending |
+| ANLST-01 | Phase 3 | Complete |
+| ANLST-02 | Phase 3 | Complete |
+| ANLST-03 | Phase 3 | Complete |
+| ANLST-04 | Phase 3 | Complete |
+| ANLST-05 | Phase 3 | Complete |
+| ORCH-01 | Phase 3 | Complete |
+| ORCH-02 | Phase 3 | Complete |
 
 **Coverage:**
 - v1 requirements: 14 total

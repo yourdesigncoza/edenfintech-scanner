@@ -54,6 +54,32 @@ A valuation is "heroic" if ANY of:
 - FCF margin estimate exceeds the company's 10-year peak
 - FCF multiple exceeds the company's historical median by more than 50%
 
+## Worst-Case Heroic Optimism Test
+
+The Heroic Optimism test applies specifically to worst-case floor estimates. A worst-case floor is "heroically optimistic" if ANY of:
+- Trough revenue used is above the company's actual lowest trailing-12-month revenue in 5yr FMP history
+- Trough FCF margin used is above the company's actual lowest annual FCF margin in 5yr FMP history
+- Trough FCF multiple used is above the industry baseline (before any discount schedule adjustments)
+- The analyst adjusted the mechanical floor price UPWARD without documenting why trough conditions are implausible
+
+When a Heroic Optimism flag is triggered, the analyst MUST provide a 1-2 sentence justification. If the justification cannot be articulated clearly, use the mechanical floor without adjustment.
+
+Note: This test is separate from the existing base-case simplicity principle above. The base-case test checks for heroic assumptions in the price target. This test checks for heroic assumptions in the worst case (floor).
+
+## TBV Cross-Check
+
+After computing the worst-case floor price, cross-check against tangible book value per share (TBV/share) from the FMP balance sheet.
+
+| Condition | Action |
+|-----------|--------|
+| Floor > 2x TBV/share | Flag for review -- floor may be too optimistic for asset-heavy companies |
+| TBV/share is negative | Note in trough path -- negative TBV suggests structural solvency risk, floor should reflect this |
+| Floor < TBV/share | No flag needed -- pessimistic floor is acceptable (asymmetric override) |
+
+TBV = Total Assets - Total Liabilities - Intangible Assets - Goodwill. Use the most recent quarterly balance sheet from FMP.
+
+The TBV cross-check is a sanity check, not a binding constraint. Asset-light businesses (software, services) may legitimately have floors far above TBV. The flag prompts review, not automatic rejection.
+
 ## Position Sizing Note
 
 Position sizing applies to NEW capital allocation only. Existing positions that have grown beyond target size are governed by sell rules (Step 8), not sizing rules.

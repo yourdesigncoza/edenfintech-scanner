@@ -133,3 +133,28 @@ Score = (100 - adjusted_downside) * 0.45 + probability * 0.40 + min(cagr, 100) *
 ```
 
 Position sizing weights: downside 50% / probability 35% / CAGR 15%. Hard caps: CAGR < 30% or probability < 60% -> size 0%. Downside 80-99% -> max 5%. Downside 100% -> max 3%.
+
+## Worst-Case Floor Calculator
+
+The `floor` command computes a mechanical worst-case floor price from trough inputs using the same 4-input valuation formula:
+
+```bash
+bash scripts/calc-score.sh floor <revenue_b> <margin_pct> <multiple> <shares_m> <current_price>
+```
+
+Example:
+```bash
+$ bash scripts/calc-score.sh floor 2.2 7.0 10 130 17.52
+{
+  "revenue_b": 2.2,
+  "fcf_margin_pct": 7.0,
+  "fcf_b": 0.154,
+  "multiple": 10.0,
+  "shares_m": 130.0,
+  "current_price": 17.52,
+  "floor_price": 11.85,
+  "downside_pct": 32.36
+}
+```
+
+The analyst runs this BEFORE writing any worst-case narrative. Trough inputs come from 5yr FMP historical data (lowest revenue, lowest FCF margin). See `knowledge/strategy-rules.md` Step 5 for the full trough-anchored worst case specification.

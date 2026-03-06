@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Exa.ai API wrapper for EdenFinTech Scanner sub-agents
-# Evaluating as alternative to Perplexity. Same pattern as perplexity-api.sh.
+# Uses official exa_py SDK. Evaluating as alternative to Perplexity.
 #
 # Usage: bash exa-api.sh ask "your question here"
 #        bash exa-api.sh search "your search query"
@@ -36,7 +36,6 @@ shift || true
 
 # Help doesn't need an API key
 if [[ "$COMMAND" == "help" ]]; then
-    # Jump straight to case statement
     :
 elif [[ -z "${EXA_API_KEY:-}" ]]; then
     echo "ERROR: EXA_API_KEY not set."
@@ -86,76 +85,42 @@ call_exa_search() {
     local num_results="${3:-10}"
 
     local response
-    response=$(EXA_QUERY="$query" EXA_TYPE="$search_type" EXA_NUM="$num_results" \
+    response=$(EXA_KEY="$EXA_API_KEY" EXA_QUERY="$query" EXA_TYPE="$search_type" EXA_NUM="$num_results" \
         python3 -c "
-import json, os, urllib.request, urllib.error
+import os, sys
+from exa_py import Exa
 
-payload = {
-    'query': os.environ['EXA_QUERY'],
-    'type': os.environ['EXA_TYPE'],
-    'numResults': int(os.environ['EXA_NUM']),
-    'contents': {
-        'highlights': {'maxCharacters': 4000},
-        'text': True
-    }
-}
-
-data = json.dumps(payload).encode()
-req = urllib.request.Request(
-    'https://api.exa.ai/search',
-    data=data,
-    headers={
-        'x-api-key': '${EXA_API_KEY}',
-        'Content-Type': 'application/json'
-    }
-)
+exa = Exa(os.environ['EXA_KEY'])
 try:
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        d = json.loads(resp.read())
-except urllib.error.HTTPError as e:
-    body = e.read().decode()
-    try:
-        err = json.loads(body)
-        msg = err.get('error', body)
-    except:
-        msg = body
-    print(f'ERROR: Exa API ({e.code}): {msg}', flush=True)
-    raise SystemExit(1)
+    result = exa.search(
+        os.environ['EXA_QUERY'],
+        type=os.environ['EXA_TYPE'],
+        num_results=int(os.environ['EXA_NUM']),
+    )
+except Exception as e:
+    print(f'ERROR: Exa API: {e}', flush=True)
+    sys.exit(1)
 
-cost = d.get('costDollars', 'N/A')
-search_time = d.get('searchTime', 'N/A')
-
-# Print context summary if present (deep search)
-context = d.get('context')
-if context:
-    print('## Summary')
-    print(context)
-    print()
-
-print(f'## Results ({len(d.get(\"results\", []))} found, cost: \${cost}, time: {search_time}ms)')
-print()
-
-for i, r in enumerate(d.get('results', []), 1):
-    title = r.get('title', 'No title')
-    url = r.get('url', '')
-    score = r.get('score', 0)
-    date = r.get('publishedDate', '')[:10] if r.get('publishedDate') else ''
+for i, r in enumerate(result.results, 1):
+    title = r.title or 'No title'
+    url = r.url or ''
+    score = getattr(r, 'score', 0) or 0
+    date = (r.published_date or '')[:10]
     print(f'### [{i}] {title}')
     print(f'URL: {url}')
     if date:
         print(f'Date: {date}')
     print(f'Score: {score:.3f}')
     print()
-    # Prefer highlights for concise output, fall back to truncated text
-    highlights = r.get('highlights', [])
+    highlights = getattr(r, 'highlights', None) or []
     if highlights:
         for h in highlights[:3]:
             print(f'> {h}')
             print()
-    elif r.get('text'):
-        text = r['text'][:2000]
+    elif getattr(r, 'text', None):
+        text = r.text[:2000]
         print(text)
-        if len(r['text']) > 2000:
+        if len(r.text) > 2000:
             print('...[truncated]')
         print()
 " 2>&1)
@@ -173,55 +138,33 @@ call_exa_answer() {
     local query="$1"
 
     local response
-    response=$(EXA_QUERY="$query" \
+    response=$(EXA_KEY="$EXA_API_KEY" EXA_QUERY="$query" \
         python3 -c "
-import json, os, urllib.request, urllib.error
+import os, sys
+from exa_py import Exa
 
-payload = {
-    'query': os.environ['EXA_QUERY'],
-    'text': True
-}
-
-data = json.dumps(payload).encode()
-req = urllib.request.Request(
-    'https://api.exa.ai/answer',
-    data=data,
-    headers={
-        'x-api-key': '${EXA_API_KEY}',
-        'Content-Type': 'application/json'
-    }
-)
+exa = Exa(os.environ['EXA_KEY'])
 try:
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        d = json.loads(resp.read())
-except urllib.error.HTTPError as e:
-    body = e.read().decode()
-    try:
-        err = json.loads(body)
-        msg = err.get('error', body)
-    except:
-        msg = body
-    print(f'ERROR: Exa API ({e.code}): {msg}', flush=True)
-    raise SystemExit(1)
+    result = exa.answer(os.environ['EXA_QUERY'], text=True)
+except Exception as e:
+    print(f'ERROR: Exa API: {e}', flush=True)
+    sys.exit(1)
 
-cost = d.get('costDollars', 'N/A')
+print(result.answer)
 
-answer = d.get('answer', '')
-print(answer)
-
-citations = d.get('citations', [])
-if citations:
+if hasattr(result, 'citations') and result.citations:
     print()
     print('## Sources')
-    for i, c in enumerate(citations, 1):
-        url = c.get('url', '') if isinstance(c, dict) else c
-        title = c.get('title', '') if isinstance(c, dict) else ''
-        if title:
-            print(f'[{i}] {title} — {url}')
+    for i, c in enumerate(result.citations, 1):
+        if hasattr(c, 'url'):
+            title = getattr(c, 'title', '') or ''
+            url = c.url or ''
+            if title:
+                print(f'[{i}] {title} -- {url}')
+            else:
+                print(f'[{i}] {url}')
         else:
-            print(f'[{i}] {url}')
-
-print(f'\n(cost: \${cost})')
+            print(f'[{i}] {c}')
 " 2>&1)
 
     local exit_code=$?
@@ -237,52 +180,30 @@ call_exa_contents() {
     local urls_json="$1"
 
     local response
-    response=$(EXA_URLS="$urls_json" \
+    response=$(EXA_KEY="$EXA_API_KEY" EXA_URLS="$urls_json" \
         python3 -c "
-import json, os, urllib.request, urllib.error
+import json, os, sys
+from exa_py import Exa
 
-payload = {
-    'urls': json.loads(os.environ['EXA_URLS']),
-    'text': True
-}
-
-data = json.dumps(payload).encode()
-req = urllib.request.Request(
-    'https://api.exa.ai/contents',
-    data=data,
-    headers={
-        'x-api-key': '${EXA_API_KEY}',
-        'Content-Type': 'application/json'
-    }
-)
+exa = Exa(os.environ['EXA_KEY'])
+urls = json.loads(os.environ['EXA_URLS'])
 try:
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        d = json.loads(resp.read())
-except urllib.error.HTTPError as e:
-    body = e.read().decode()
-    try:
-        err = json.loads(body)
-        msg = err.get('error', body)
-    except:
-        msg = body
-    print(f'ERROR: Exa API ({e.code}): {msg}', flush=True)
-    raise SystemExit(1)
+    result = exa.get_contents(urls, text=True)
+except Exception as e:
+    print(f'ERROR: Exa API: {e}', flush=True)
+    sys.exit(1)
 
-cost = d.get('costDollars', 'N/A')
-
-for i, r in enumerate(d.get('results', []), 1):
-    title = r.get('title', 'No title')
-    url = r.get('url', '')
+for i, r in enumerate(result.results, 1):
+    title = r.title or 'No title'
+    url = r.url or ''
     print(f'### [{i}] {title}')
     print(f'URL: {url}')
     print()
-    text = r.get('text', '')[:5000]
+    text = (r.text or '')[:5000]
     print(text)
-    if len(r.get('text', '')) > 5000:
+    if len(r.text or '') > 5000:
         print('...[truncated]')
     print()
-
-print(f'(cost: \${cost})')
 " 2>&1)
 
     local exit_code=$?
@@ -358,7 +279,7 @@ case "$COMMAND" in
         ;;
 
     contents)
-        urls_json="$1"
+        urls_json="${1:-}"
         if [[ -z "$urls_json" ]]; then
             echo "Usage: exa-api.sh contents '[\"url1\", \"url2\"]'"
             exit 1
@@ -393,6 +314,7 @@ case "$COMMAND" in
         echo ""
         echo "Environment: EXA_API_KEY required in \$SCANNER_DATA_DIR/.env"
         echo "Cache: \$SCANNER_DATA_DIR/cache/exa/ (1-day TTL, --fresh to bypass)"
+        echo "Requires: pip3 install exa-py"
         ;;
 
     *)

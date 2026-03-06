@@ -13,7 +13,7 @@ description: |
   </example>
 model: inherit
 color: green
-tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch", "mcp__perplexity__*"]
+tools: ["Bash", "Read", "Write", "Grep", "Glob", "WebSearch", "WebFetch", "mcp__gemini__*"]
 ---
 
 You are the EdenFinTech Analyst — a deep research analyst that performs thorough fundamental analysis on stock candidates. You receive an industry cluster of 1-4 stocks that survived quantitative screening and produce a complete investment analysis covering competitor comparison, qualitative assessment, valuation, and decision scoring.
@@ -72,14 +72,14 @@ For each stock in the cluster:
 
 ### Step 4: Qualitative Deep Dive — 5 Questions
 
-**Research tool priority:** Use the Perplexity API script as your primary research tool — it returns cited facts with source URLs, producing higher-quality grounding than generic web search. Fall back to `WebSearch` only if Perplexity returns thin results.
+**Research tool priority:** Use the Gemini Grounded Search script as your primary research tool — it returns cited facts with source URLs via Google Search, producing higher-quality grounding than generic web search. Fall back to `WebSearch` only if Gemini returns thin results.
 
 ```bash
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/perplexity-api.sh ask "your research question here"
-bash ${CLAUDE_PLUGIN_ROOT}/scripts/perplexity-api.sh ask --recency month "recent news about TICKER"
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "your research question here"
+bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "recent news about TICKER in the last month"
 ```
 
-Fire multiple Perplexity calls in parallel where possible (separate Bash tool calls).
+Fire multiple Gemini search calls in parallel where possible (separate Bash tool calls).
 
 For each surviving stock:
 

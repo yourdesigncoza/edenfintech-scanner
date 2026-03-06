@@ -22,10 +22,11 @@ A Claude Code plugin that implements an on-demand NYSE stock scanner using the E
 - **Analyst** (`agents/analyst.md`): Steps 3-6. Competitor comparison, qualitative deep dive (moats, management, catalysts), 4-input valuation model, decision scoring. Hard rule: no catalysts = automatic pass. No Task tool — leaf agent.
 - **Knowledge files** (`$SCANNER_DATA_DIR/knowledge/`): Strategy rules, scoring formulas, excluded industries, current portfolio holdings, valuation guidelines. Agents resolve path via `bash scripts/fmp-api.sh knowledge-dir`. Source copies in `knowledge/` for git tracking; runtime reads from data dir.
 - **Sector knowledge** (`$SCANNER_DATA_DIR/knowledge/sectors/`): Per-sector hydrated knowledge files produced by `/sector-hydrate`. Sub-sector analysis, regulation, valuation approaches, evidence requirements. Registry at `_registry.md`.
-- **Sector Coordinator** (`agents/sector-coordinator.md`): Orchestrates sector hydration — discovers sub-sectors via FMP + Perplexity, spawns parallel researchers, synthesizes output. Has Task tool.
-- **Sector Researcher** (`agents/sector-researcher.md`): Leaf agent for sector research. 2-phase: (A) fires 8 parallel `perplexity_ask` queries for cited facts, (B) Claude synthesizes results into structured output. No Task tool.
+- **Sector Coordinator** (`agents/sector-coordinator.md`): Orchestrates sector hydration — discovers sub-sectors via FMP + Gemini Grounded Search, spawns parallel researchers, synthesizes output. Has Task tool.
+- **Sector Researcher** (`agents/sector-researcher.md`): Leaf agent for sector research. 2-phase: (A) fires 8 parallel Gemini Grounded Search queries for cited facts, (B) Claude synthesizes results into structured output. No Task tool.
 - **FMP API script** (`scripts/fmp-api.sh`): Bash wrapper around Financial Modeling Prep **Stable API** (`https://financialmodelingprep.com/stable`). All data fetching goes through this.
-- **Perplexity API script** (`scripts/perplexity-api.sh`): Bash wrapper around the Perplexity API for web-grounded research. MCP tools don't propagate to sub-agents, so this provides Perplexity access via Bash. Commands: `ask`, `search`, `reason`. Cached to `$SCANNER_DATA_DIR/cache/perplexity/` (1-day TTL).
+- **Gemini Grounded Search script** (`scripts/gemini-search.sh`): Bash wrapper around Gemini API with Google Search grounding for web-grounded research. Free tier: 500 req/day (Flash), 1500/day (Pro). Commands: `ask`, `usage`. Cached to `$SCANNER_DATA_DIR/cache/gemini-search/` (1-day TTL). Daily usage tracked in `$SCANNER_DATA_DIR/cache/gemini-search/usage/`.
+- **Perplexity API script** (`scripts/perplexity-api.sh`): Retained as fallback. Commands: `ask`, `search`, `reason`. Cached to `$SCANNER_DATA_DIR/cache/perplexity/` (1-day TTL).
 - **Plugin manifest** (`.claude-plugin/marketplace.json`): Plugin metadata for Claude Code plugin system.
 
 Data flows between agents via Task tool prompt/response — the orchestrator passes scan parameters down and collects structured markdown results back.
@@ -52,17 +53,27 @@ Rate limit awareness:
 - `screener` accepts optional exchange and sector args: `screener NYSE "Consumer Defensive"`.
 - `sbc` and `shares` pipe JSON through python3 for formatting.
 
-## Perplexity API Script Details
+## Gemini Grounded Search Details
+
+```bash
+bash scripts/gemini-search.sh <command> [args...]
+```
+
+Commands: `ask [--model flash|pro|flash2]`, `usage`, `help`. Use `--fresh` to bypass cache.
+
+API key resolution chain: `$SCANNER_DATA_DIR/.env` → `~/.claude.json` (reads from Gemini MCP server config).
+
+**Free tier limits:** 500 req/day (Flash), 1500 req/day (Pro). Usage tracked daily — run `bash scripts/gemini-search.sh usage` to check. Warns at 50 remaining, alerts when exceeding free tier with estimated paid cost ($35/1k grounded prompts).
+
+**Why Gemini over Perplexity:** Benchmarked Mar 2026 — Gemini Grounded Search beat Perplexity on synthesis quality, source quantity (11-26 vs 3-6 per query), financial specifics, and risk discovery (found DOJ price-fixing case that Perplexity missed). Also free at scanner volumes vs ~$2.50/mo for Perplexity. FMP handles raw financial data, so the web search layer only needs qualitative intelligence — Gemini excels here.
+
+## Perplexity API Script (Fallback)
 
 ```bash
 bash scripts/perplexity-api.sh <command> [args...]
 ```
 
-Commands: `ask`, `search`, `reason`. Use `--fresh` to bypass cache, `--recency` to filter by time.
-
-API key resolution chain: `$SCANNER_DATA_DIR/.env` → `~/.config/edenfintech-scanner/.env` → `~/.claude.json` (reads from MCP server config).
-
-**Why this exists:** MCP tools (`mcp__perplexity__*`) don't propagate to sub-agents spawned via Task/Agent tool in Claude Code. This script provides equivalent Perplexity access via Bash, which IS available in all sub-agents.
+Retained as fallback if Gemini quota is exhausted or returns thin results. Commands: `ask`, `search`, `reason`.
 
 ## Testing / Running
 

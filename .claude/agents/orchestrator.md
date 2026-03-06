@@ -223,6 +223,31 @@ bash scripts/calc-score.sh size {new_score} {cagr} {effective_probability} {down
 
 8. **Apply binary outcome override**: If Q4 = No AND confidence ≤ 3 → cap at 5% regardless of score
 
+### 4a2. Downside Compliance Audit
+
+After epistemic review, before the multiple consistency audit, verify each scored candidate's worst-case methodology:
+
+1. **Floor calc check**: Confirm the analyst output contains a `calc-score.sh floor` command invocation with JSON output. The trough path must trace each of the 4 inputs (revenue, FCF margin, multiple, shares) to a specific FMP data point.
+   - **Missing floor calc** → reject: move to "Rejected at Analysis" with reason: "downside non-compliant: no floor calc"
+
+2. **Heroic Optimism check**: Scan for any unresolved Heroic Optimism flags. A flag is "unresolved" if the analyst adjusted the floor upward without providing a 1-2 sentence justification, OR if justification was provided but any of these conditions are true:
+   - Trough revenue used is above the company's actual lowest TTM revenue in 5yr FMP history
+   - Trough FCF margin used is above the company's actual lowest annual FCF margin in 5yr FMP history
+   - Trough FCF multiple used is above the industry baseline (before discount schedule)
+   - **Unresolved heroic optimism** → reject: move to "Rejected at Analysis" with reason: "downside non-compliant: unresolved Heroic Optimism flag — {specific trigger}"
+
+3. **TBV cross-check**: Confirm the analyst output includes a TBV/share comparison. If Floor > 2x TBV/share, confirm the analyst noted the flag.
+   - **Missing TBV cross-check** → reject: move to "Rejected at Analysis" with reason: "downside non-compliant: TBV cross-check skipped"
+   - **TBV flag present but unaddressed** → add `downside_tbv_warning` confidence flag (does NOT reject — TBV is a sanity check, not a binding constraint)
+
+4. **Trough path completeness**: Verify the trough path table has all 4 rows (Revenue, FCF Margin, FCF Multiple, Shares) with non-empty Fiscal Year and FMP Data Point columns.
+   - **Incomplete trough path** → reject: move to "Rejected at Analysis" with reason: "downside non-compliant: incomplete trough path — missing {input}"
+
+Candidates passing all 4 checks proceed to the multiple consistency audit. Add a line in the methodology notes section of the report:
+```
+- Downside methodology audited: floor calc present, Heroic Optimism resolved, TBV cross-check complete, trough path verified
+```
+
 ### 4b. Multiple Consistency Audit
 
 After the epistemic review, before ranking:
@@ -353,6 +378,7 @@ For each exception candidate, include the same full analysis detail as ranked ca
 - PCS answers are evidence-anchored — each answer cites a source or declares NO_EVIDENCE
 - Risk-type friction applied to PCS confidence where applicable (see scoring-formulas.md)
 - Threshold proximity warnings flag base probabilities within 2% of hard caps
+- Downside compliance audited: trough-anchored floor calc, Heroic Optimism resolution, TBV cross-check, trough path completeness
 
 ---
 *Scan completed {YYYY-MM-DD} using EdenFinTech deep value turnaround methodology*

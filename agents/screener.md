@@ -120,7 +120,8 @@ For each surviving stock, run all 5 checks. Use `bash ${CLAUDE_PLUGIN_ROOT}/scri
 - Pull: historical averages of same metrics
 - If current margins are depressed: calculate normalized P/FCF using historical FCF margin applied to current revenue
 - Estimate rough CAGR potential: can this stock reasonably return 30%/year for 2-3 years?
-- FAIL if: even with normalized margins and reasonable multiple, can't reach 30% CAGR
+- FAIL if: even with normalized margins and reasonable multiple, can't reach 25% CAGR
+- If estimated CAGR 25-29.9%: flag as "valuation_borderline" — screener's rough estimate has ±5% margin of error, analyst's detailed model is the real gate
 - If borderline: flag as "valuation_borderline"
 
 ### Output Format

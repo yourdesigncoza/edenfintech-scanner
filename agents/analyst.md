@@ -48,6 +48,28 @@ Read these for rules and formulas:
 
 ## Your Process
 
+### Pre-Step: CAGR Momentum Gate (borderline stocks only)
+
+If ANY stock in the cluster has a `valuation_borderline` flag (screener estimated 25-29.9% CAGR), run this fast check BEFORE investing in Steps 3-4:
+
+1. **Pull 5-year financials**: income, metrics (2 API calls)
+2. **Calculate rolling 3-year CAGR for each of the last 3 periods** (e.g., 2021-2024, 2022-2025, 2023-2026E):
+   - Revenue CAGR
+   - FCF per share CAGR
+   - Operating margin trend (expanding/contracting)
+3. **Assess CAGR momentum:**
+   - **Strengthening** — recent CAGR > earlier CAGR, margins expanding, revenue per share accelerating. Signals successful scaling or turnaround traction. → **PROCEED** to full analysis
+   - **Flat** — CAGR roughly stable across periods, margins flat. No acceleration but no decay. → **PROCEED with caution**, note in output
+   - **Weakening** — recent CAGR < earlier CAGR, margins contracting, growth decelerating. → **EARLY EXIT** — reject with one-line reason: "Borderline CAGR with weakening momentum — no evidence of accelerating growth"
+
+4. **Quick catalyst sniff** (for flat momentum only):
+   ```bash
+   bash ${CLAUDE_PLUGIN_ROOT}/scripts/gemini-search.sh ask "recent catalysts or turnaround initiatives for TICKER in the last 6 months"
+   ```
+   If a concrete catalyst exists that could inflect the trend → PROCEED. If nothing concrete → EARLY EXIT.
+
+**Cost:** ~3 API calls per borderline stock vs ~20+ for full Steps 3-6. Saves budget for stocks with real upside potential.
+
 ### Step 3: Competitor Comparison
 
 For each stock in the cluster:
@@ -189,7 +211,7 @@ Read `$KNOWLEDGE_DIR/scoring-formulas.md` for exact math.
 Before estimating probability, check the probability ceilings in scoring-formulas.md.
 If your estimate exceeds a ceiling, use the ceiling value and note: "Ceiling applied: [condition] → capped at [X]%"
 
-**Use the calculator for ALL math in Steps 5-6:**
+**Use the calculator for ALL math in Steps 5-6 — NO MANUAL ARITHMETIC:**
 ```bash
 # Calculate target price
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh valuation <revenue_B> <margin_pct> <multiple> <shares_M>
@@ -203,7 +225,7 @@ bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh score <downside_pct> <probabili
 # Determine position size
 bash ${CLAUDE_PLUGIN_ROOT}/scripts/calc-score.sh size <score> <cagr_pct> <probability_pct> <downside_pct>
 ```
-Show the command AND its JSON output in your analysis. This ensures deterministic, verifiable math.
+**HARD RULE:** Run these Bash commands and use the JSON output as your score. Do NOT compute scores manually — the formula includes an adjusted downside penalty curve that manual arithmetic will get wrong. The calc-score.sh output IS the score. Show the command AND its JSON output in your analysis.
 
 For each surviving stock:
 
@@ -310,6 +332,7 @@ Return results as structured markdown:
 - **Catalysts:** {bulleted list with timelines}
 - **Moat Summary:** {1-2 sentence moat assessment}
 - **Dominant Risk Type:** {Operational/Financial | Cyclical/Macro | Regulatory/Political | Legal/Investigation | Structural fragility (SPOF)} — classify based on which risk category would most likely cause the thesis to fail. Choose ONE dominant type.
+  - **Active litigation override:** If the company has an active class-action lawsuit, SEC investigation, DOJ probe, or pending regulatory enforcement action, the dominant risk type MUST be Legal/Investigation regardless of other risk factors. Active litigation = binary outcome risk that supersedes operational concerns.
 
 (repeat for each stock in cluster)
 

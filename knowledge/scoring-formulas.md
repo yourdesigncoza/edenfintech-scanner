@@ -30,6 +30,17 @@ adjusted_downside = downside_pct * (1 + (downside_pct / 100) * 0.5)
 
 Example: 30% downside → adjusted = 30 * 1.15 = 34.5. 60% downside → adjusted = 60 * 1.30 = 78.
 
+### Downside Anchoring
+
+The worst-case downside percentage used in decision scoring MUST be anchored to a mechanical floor price:
+
+1. Analyst identifies trough inputs from 5yr FMP historical data (see `strategy-rules.md` Step 5 trough input anchoring table)
+2. Analyst runs `calc-score.sh floor <revenue_b> <margin_pct> <multiple> <shares_m> <current_price>` to compute the mechanical floor price and downside percentage
+3. The mechanical floor is the STARTING POINT -- analyst may adjust downward (harsher) freely, but adjusting upward triggers "Heroic Optimism" flag
+4. Final downside_pct used in scoring must have an auditable trough path tracing each input to a specific fiscal year
+
+The floor command output provides the anchored downside_pct that feeds into the scoring formula above.
+
 ## Position Sizing
 
 Used to determine how much capital goes into each position.

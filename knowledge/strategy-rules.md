@@ -127,9 +127,41 @@ The LLM pipeline CANNOT approve the 20% exception. When a stock has CAGR 20-29.9
 3. Human approves or rejects after reading the complete report
 4. Only a human-approved exception candidate may be promoted to the ranked list
 
-### Reasonable Worst Case (Required)
-- Every investment needs a downside estimate
-- Goal: asymmetry — limited downside vs. large upside
+### Trough-Anchored Worst Case (Required)
+
+The worst case uses the same 4-input valuation formula as the base case, but with trough inputs anchored to 5yr FMP historical data. Same stock + same data = same downside estimate. The mechanical floor from `calc-score.sh floor` is the starting point, not the final answer.
+
+#### Trough Input Anchoring
+
+| Input | Trough Anchor | Source |
+|-------|---------------|--------|
+| Revenue | Lowest trailing-12-month revenue in 5yr FMP history | `income` endpoint |
+| FCF Margin | Lowest annual FCF margin in 5yr FMP history | `cashflow` / `income` endpoints |
+| FCF Multiple | Industry baseline from valuation-guidelines.md MINUS full discount schedule | `valuation-guidelines.md` |
+| Shares | Current diluted shares (no buyback credit in worst case) | `metrics` endpoint |
+
+#### 5-Step Structured Process
+
+- **Step A:** Identify trough inputs from 5yr FMP data already fetched in Step 3
+- **Step B:** Run `calc-score.sh floor` with trough inputs to get mechanical floor price
+- **Step C:** Cross-check floor against tangible book value per share (see valuation-guidelines.md TBV Cross-Check)
+- **Step D:** Analyst adjustment — may make floor harsher (event risk, litigation) freely; making it more optimistic triggers Heroic Optimism flag (see valuation-guidelines.md)
+- **Step E:** Show "trough path" — a table mapping each trough input to a specific fiscal year and FMP data point
+
+#### Asymmetric Override Rule
+
+"Pessimism is free, optimism is flagged." The analyst may freely adjust the floor downward for event risk, litigation exposure, or structural concerns not captured in historical data. Adjusting the floor UPWARD from the mechanical calculation triggers the "Heroic Optimism" flag, which requires the analyst to justify why trough conditions are implausible. The orchestrator audits unresolved Heroic Optimism flags.
+
+#### Trough Path Format
+
+| Input | Trough Value | Fiscal Year | FMP Data Point |
+|-------|-------------|-------------|----------------|
+| Revenue | $2.2B | FY2022 | income statement, trailing 12mo |
+| FCF Margin | 7.0% | FY2021 | cashflow / income |
+| FCF Multiple | 10x | — | Industry 15x minus discounts (-3x leverage, -2x decline) |
+| Shares | 130M | Current | metrics, diluted |
+
+See `scoring-formulas.md` for the mechanical downside anchoring requirement and `valuation-guidelines.md` for the Heroic Optimism test and TBV cross-check.
 
 ### Gut Check
 - Does implied multiple make sense vs. own history?

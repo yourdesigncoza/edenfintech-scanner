@@ -89,14 +89,36 @@ For each stock in the cluster:
    - Dilution (share count change, SBC % of revenue)
    - FCF yield at current price
 
-3. **Check margin trends**: If any company shows margins declining steadily for 5+ years → **permanent pass** (remove from analysis, note in output)
+3. **Check margin trends**:
+   - Explicitly check gross margin, operating margin, and FCF margin trends over 5+ years.
+   - If one or more show clear long-term erosion, label the stock `PERMANENT_PASS` with one-line evidence.
+   - A `PERMANENT_PASS` name may appear in comparison tables for context, but cannot advance as a real contender.
 
 4. **Rank by quality priority** (in this order):
    - **#1 Balance sheet strength** — lowest leverage, most cash, best interest coverage
    - **#2 Superior niches or margins** — best margins in the group, unique market position
    - **#3 Overall risk-adjusted return potential** — highest upside with acceptable risk
 
-5. **Identify winner(s)**: The stock(s) that best combine quality and return potential
+5. **Build a required Cluster Ranking Record** with these dimensions per stock:
+   - `Survival Quality` (Strong / Moderate / Weak): leverage, runway, debt burden, interest coverage, ability to survive until thesis plays out
+   - `Business Quality` (Strong / Moderate / Weak): margins, niche strength, moat evidence, industry position, capital efficiency
+   - `Return Quality` (Strong / Moderate / Weak): upside, downside profile, valuation path credibility, dependence on heroic assumptions
+   - `Margin Trend Gate` (`PASS` or `PERMANENT_PASS`)
+   - `Final Cluster Status` (`CLEAR_WINNER`, `CONDITIONAL_WINNER`, `LOWER_PRIORITY`, `ELIMINATED`)
+
+6. **Identify winner(s)**: the stock(s) that best combine quality and return potential under the priority ordering above.
+
+7. **Backup-candidate retention rule (mandatory)**:
+   - A non-winner can remain alive only if ALL are true:
+     - no earlier-step failure
+     - materially higher return potential than the winner
+     - limited alternatives in the cluster
+   - If retained, include a short block:
+     - `Why kept despite lower quality:`
+     - `No earlier-step failure found`
+     - `Return potential is materially higher`
+     - `Limited alternatives in cluster`
+   - If these are not satisfied, drop the stock from deeper analysis.
 
 ### Step 4: Qualitative Deep Dive — 5 Questions
 
@@ -110,6 +132,29 @@ bash scripts/gemini-search.sh ask "recent news about TICKER in the last month"
 Fire multiple Gemini search calls in parallel where possible (separate Bash tool calls).
 
 For each surviving stock:
+
+Before finalizing Step 4, build two required structured artifacts:
+
+1. **Catalyst Quality Record**
+   - Classify every item as one of:
+     - `VALID_CATALYST`
+     - `SUPPORTING_TAILWIND`
+     - `WATCH_ONLY`
+     - `INVALID`
+   - For each item explicitly assess:
+     - specific? (Yes/No)
+     - time-bound? (Yes/No/Partial)
+     - measurable? (Yes/No/Partial)
+     - linked to thesis change? (Yes/No)
+
+2. **Issues-And-Fixes Evidence Table**
+   - For each major issue include:
+     - `Issue`
+     - `Management Response`
+     - `Evidence Of Action`
+     - `Evidence Of Progress`
+     - `Open Risk`
+     - `Evidence Status` (`ANNOUNCED_ONLY`, `ACTION_UNDERWAY`, `EARLY_RESULTS_VISIBLE`, `PROVEN`)
 
 **Q1: Durable Competitive Advantages (Moats)?**
 - Search for: market share data, competitive position, barriers to entry
@@ -138,8 +183,10 @@ For each surviving stock:
 **Q5: Catalysts?**
 - Search: news, filings, industry reports for potential catalysts
 - Types to look for: margin expansion, regulatory clearance, new leadership, faster growth, falling interest rates, demographic/FX tailwinds, demand drivers, divestitures
-- **HARD RULE: if no catalysts found → AUTOMATIC PASS on the stock. Remove from analysis.**
-- List each catalyst with estimated timeline and impact
+- A catalyst qualifies as `VALID_CATALYST` only if mostly true: specific event/change, plausible timeline, measurable checkpoint, and direct link to business/perception change relevant to the thesis
+- Generic positives (e.g., "market may rerate", "brand is strong", "could recover over time") cannot be `VALID_CATALYST` on their own
+- **HARD RULE: if no `VALID_CATALYST` is found → AUTOMATIC PASS on the stock. Remove from analysis.**
+- List each valid catalyst with timeline and expected measurable effect
 
 ### Step 5: Valuation
 
@@ -181,6 +228,13 @@ Price Target = (Revenue x FCF Margin x FCF Multiple) / Shares Outstanding
 CAGR = ((Price Target / Current Price) ^ (1 / Years)) - 1
 ```
 
+Required execution discipline:
+- Run `calc-score.sh valuation` and `calc-score.sh cagr`
+- Show the command AND the JSON output in the analysis
+- Use the calculator output as the authoritative target price and CAGR
+- Do not hand-compute or restate a different value in prose
+- If you round for readability, label it clearly as display-only and never use rounded values for hurdle or score math
+
 **Hurdle check:**
 - CAGR >= 30%? → Proceed normally
 - CAGR 20-29.9% with top-tier CEO + 6yr+ runway? → **EXCEPTION CANDIDATE**: complete full analysis (valuation, moats, catalysts, epistemic) but label output as `EXCEPTION CANDIDATE — human gate required`. Cluster Summary verdict: `EXCEPTION — Human Review` (not BUY/WATCHLIST/PASS)
@@ -206,11 +260,33 @@ The worst case uses the same 4-input formula with trough inputs anchored to 5yr 
 | FCF Multiple | Industry baseline from valuation-guidelines.md MINUS full discount schedule | `valuation-guidelines.md` |
 | Shares | Current diluted shares (no buyback credit in worst case) | `metrics` endpoint |
 
+**Phase 5 downside calibration policy (deterministic):**
+- Default remains minimum-anchor trough selection.
+- Only approved exceptions:
+  1. `growth_revenue_bound_70pct_current`
+     - Use:
+       ```bash
+       bash scripts/calc-score.sh revenue-floor <current_revenue_b> <min_5y_revenue_b> <revenue_cagr_5y_pct>
+       ```
+  2. `margin_outlier_adjustment_second_lowest`
+     - Use:
+       ```bash
+       bash scripts/calc-score.sh margin-floor <m1> <m2> <m3> <m4> <m5>
+       ```
+- If no exception trigger is met, use pure minimum-anchor trough inputs.
+- If an exception is used, include helper command + JSON output and name the triggered rule.
+
 **Step B — Run the floor calculator** (MUST run before writing any worst-case narrative):
 ```bash
 bash scripts/calc-score.sh floor <revenue_b> <margin_pct> <multiple> <shares_m> <current_price>
 ```
 Show the command AND its JSON output in the analysis. The floor_price and downside_pct from this output are the mechanical starting point.
+
+Downside normalization rule:
+- If mechanical floor price is below `0`, explicitly state: `equity floor below zero -> scored downside capped at 100%`
+- If mechanical downside_pct exceeds `100%`, explicitly state the mechanical value and the scored value separately
+- Use `100%` as the scored downside input to `calc-score.sh score`
+- Never silently swap from a mechanical downside above 100% to a scored downside of 100%
 
 **Step C — TBV cross-check:**
 Fetch tangible book value per share from the most recent quarterly balance sheet:
@@ -296,6 +372,10 @@ For each surviving stock:
      Ceiling check: {ceiling applied or "none"}
      Final probability: {band}%
      ```
+   - Forbidden behavior:
+     - no `override`, `bump`, `recalibrate`, `broadly feels like`, or similar post-hoc narrative changes after banding
+     - no second-pass adjustment once the nearest band is chosen
+     - no final probability that differs from the displayed base-rate-plus-modifier path
 3. **Calculate CAGR** using `calc-score.sh cagr`
 4. **Calculate decision score** using `calc-score.sh score`
 5. **Determine position size** using `calc-score.sh size`
@@ -305,6 +385,7 @@ For each surviving stock:
 - Apply the formula ONCE. The result is the score. Period.
 - Do NOT revise inputs to produce a "better" score
 - Do NOT add adjustments, bonuses, rounding, or "catalyst density" modifiers outside the formula
+- Do NOT round a sub-30% CAGR up to `30%` in the score section
 - Do NOT show multiple scoring attempts — one set of inputs, one final score
 - If uncertain about an input, reflect that in the probability estimate, not by re-running the formula
 - A "Pass" (Reject) is a successful outcome. You are a skeptical bouncer, not a talent scout.
@@ -343,6 +424,30 @@ Return results as structured markdown:
 **Quality Ranking:** TICK1 > TICK2 > TICK3
 **Reasoning:** [2-3 sentences on why this ordering]
 
+### Cluster Ranking Record
+
+| Ticker | Survival Quality | Business Quality | Return Quality | Margin Trend Gate | Final Cluster Status |
+|--------|------------------|------------------|----------------|-------------------|----------------------|
+| TICK1 | Strong | Moderate | Strong | PASS | CLEAR_WINNER |
+| TICK2 | Moderate | Strong | Moderate | PASS | CONDITIONAL_WINNER |
+| TICK3 | Weak | Weak | Strong | PERMANENT_PASS | ELIMINATED |
+
+Enum purity rule:
+- `Survival Quality`, `Business Quality`, `Return Quality` must be exactly `Strong`, `Moderate`, or `Weak`
+- `Margin Trend Gate` must be exactly `PASS` or `PERMANENT_PASS`
+- `Final Cluster Status` must be exactly `CLEAR_WINNER`, `CONDITIONAL_WINNER`, `LOWER_PRIORITY`, or `ELIMINATED`
+- Put reasons outside the table, never inside enum cells
+
+**Quality Priority Applied**
+- Balance sheet winner: {ticker}
+- Best niche/margin quality: {ticker}
+- Highest return quality: {ticker}
+
+**Cluster Verdict**
+- Clear winner / conditional winner / no clear winner: {verdict}
+- Eliminated names: {ticker + reason}
+- Backup candidates retained: {ticker + method-consistent reason or "none"}
+
 ### Detailed Analysis
 
 #### {TICKER} — {Company Name}
@@ -355,7 +460,31 @@ Return results as structured markdown:
 1. {Catalyst} — Timeline: {when} | Impact: {what changes}
 2. {Catalyst} — Timeline: {when} | Impact: {what changes}
 
+**Catalyst Quality Record:**
+| Item | Classification | Specific? | Time-Bound? | Measurable? | Thesis-Linked? | Verdict |
+|------|----------------|-----------|-------------|-------------|----------------|---------|
+| {item} | VALID_CATALYST | Yes | Yes | Yes | Yes | VALID_CATALYST |
+| {item} | SUPPORTING_TAILWIND | Yes | Partial | No | Partial | SUPPORTING_TAILWIND |
+| {item} | WATCH_ONLY | Yes | Partial | Partial | Partial | WATCH_ONLY |
+| {item} | INVALID | No | No | No | No | INVALID |
+
+**Issues-And-Fixes Evidence Table:**
+| Issue | Management Response | Evidence Of Action | Evidence Of Progress | Open Risk | Evidence Status |
+|------|----------------------|-------------------|----------------------|-----------|-----------------|
+| {issue} | {response} | {evidence} | {progress} | {risk} | ACTION_UNDERWAY |
+| {issue} | {response} | {evidence} | {progress} | {risk} | EARLY_RESULTS_VISIBLE |
+
 **Valuation Model:**
+- Valuation command: `bash scripts/calc-score.sh valuation {revenue_B} {margin_pct} {multiple} {shares_M}`
+- Valuation JSON:
+```json
+{...}
+```
+- CAGR command: `bash scripts/calc-score.sh cagr {current_price} {target_price} {years}`
+- CAGR JSON:
+```json
+{...}
+```
 - Revenue: ${current} → ${estimated} by {year} ({reasoning})
 - FCF Margin: {current}% → {estimated}% ({reasoning})
 - FCF: ${estimated revenue} x {margin}% = ${fcf}
@@ -365,6 +494,12 @@ Return results as structured markdown:
 
 **Worst Case (Trough-Anchored):**
 - Floor command: `calc-score.sh floor {rev_b} {margin} {multiple} {shares} {price}` → ${floor_price} ({n}% downside)
+- Floor JSON:
+```json
+{...}
+```
+- Calibration rule: `{default_min_5y | growth_revenue_bound_70pct_current | margin_outlier_adjustment_second_lowest | combined}` — Trigger: {condition or "none"}
+- Downside normalization: mechanical downside {n}% / scored downside {n}%
 - TBV cross-check: TBV/share ${tbv} — {flag or "no flag"}
 - Adjustment: {None / Harsher: {reason} / More optimistic: {justification} — HEROIC OPTIMISM FLAG}
 - **Trough Path:**
@@ -378,6 +513,16 @@ Return results as structured markdown:
 **Gut Check:** Implied {n}x P/FCF vs. historical median {n}x — {pass/concern}
 
 **Decision Score:**
+- Score command: `bash scripts/calc-score.sh score {downside_pct_used_for_scoring} {probability_pct_band} {cagr_pct_exact}`
+- Score JSON:
+```json
+{...}
+```
+- Size command: `bash scripts/calc-score.sh size {score} {cagr_pct_exact} {probability_pct_band} {downside_pct_used_for_scoring}`
+- Size JSON:
+```json
+{...}
+```
 - Downside: {n}% (adjusted: {n}) x 0.45 = {n}
 - Probability: {n}% x 0.40 = {n}
 - CAGR: {n}% x 0.15 = {n}
@@ -385,6 +530,13 @@ Return results as structured markdown:
 
 **Recommended Position Size:** {n}%
 **Confidence Flags:** {list of flags}
+
+**Current Holding Overlay** (only if ticker exists in `current-portfolio.md`):
+- Holding status: {existing position}
+- New capital decision: {ADD / DO NOT ADD}
+- Existing position action: {HOLD / HOLD_AND_MONITOR / TRIM / REDUCE / EXIT}
+- Reason: {separate Step 8 logic from new-capital logic}
+- Note: failing the scan for new capital does not by itself trigger a sell
 
 **Epistemic Input** (for independent confidence review):
 - **Thesis:** {2-3 sentence summary of the turnaround opportunity — what's broken and why it recovers}
@@ -395,6 +547,11 @@ Return results as structured markdown:
   - **Active litigation override:** If the company has an active class-action lawsuit, SEC investigation, DOJ probe, or pending regulatory enforcement action, the dominant risk type MUST be Legal/Investigation regardless of other risk factors. Active litigation = binary outcome risk that supersedes operational concerns.
 
 (repeat for each stock in cluster)
+
+**Why kept despite lower quality** (only for retained non-winners):
+- No earlier-step failure found
+- Return potential is materially higher
+- Limited alternatives in cluster
 
 ### Cluster Summary
 
@@ -411,6 +568,10 @@ Return results as structured markdown:
 - Never fabricate data. If FMP API returns nothing, say so and flag it.
 - Be honest about uncertainty. Flag low-confidence areas explicitly.
 - The HARD RULE on catalysts is non-negotiable: no catalysts = pass.
+- Step 4 catalyst discipline is non-negotiable: no `VALID_CATALYST` = pass.
+- Do not treat `ANNOUNCED_ONLY` items as equivalent to proven execution.
+- Step 3 ranking must show the methodology order explicitly: survival quality first, business quality second, return quality third.
+- If a ticker is already held, explicitly separate `new capital decision` from `existing position action`.
 - Probability estimates must reflect actual research, not optimism.
 - Compare everything to the current portfolio (read current-portfolio.md).
 - Think like a skeptic — your job is to find reasons NOT to invest, then see if the opportunity survives.

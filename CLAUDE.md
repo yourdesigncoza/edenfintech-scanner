@@ -14,6 +14,10 @@ An on-demand NYSE stock scanner using the EdenFinTech deep value turnaround stra
         -> screener agent (Phase 1: quantitative filtering, Steps 1-2)
         -> analyst agents (Phase 2: deep analysis, Steps 3-6, one per industry cluster, parallel)
     -> final ranked report saved to data/scans/ (+ docs/scans/)
+
+/review-holding skill (Step 8 entry point)
+    -> holding-reviewer agent
+    -> thesis integrity + catalyst tracking + forward-return refresh + sell-trigger checks
 ```
 
 - **Skill** (`.claude/skills/scan-stocks/SKILL.md`): Entry point. Parses user input (full scan / sector / specific tickers), checks FMP API key, spawns orchestrator via Task tool.
@@ -25,6 +29,7 @@ An on-demand NYSE stock scanner using the EdenFinTech deep value turnaround stra
 - **Sector Coordinator** (`.claude/agents/sector-coordinator.md`): Orchestrates sector hydration. Has Task tool.
 - **Sector Researcher** (`.claude/agents/sector-researcher.md`): Leaf agent for sector research. 2-phase: Gemini Grounded Search queries then Claude synthesis.
 - **FMP API script** (`scripts/fmp-api.sh`): Bash wrapper around Financial Modeling Prep **Stable API** (`https://financialmodelingprep.com/stable`).
+- **Holding Reviewer** (`.claude/agents/holding-reviewer.md`): Step 8 monitoring workflow for existing positions.
 - **Gemini Grounded Search script** (`scripts/gemini-search.sh`): Bash wrapper around Gemini API with Google Search grounding. Free tier: 500 req/day (Flash), 1500/day (Pro). Cached to `data/cache/gemini-search/` (1-day TTL).
 - **Perplexity API script** (`scripts/perplexity-api.sh`): Retained as fallback. Cached to `data/cache/perplexity/` (1-day TTL).
 
@@ -85,12 +90,20 @@ bash scripts/fmp-api.sh profile CPS
 /scan-stocks                        # full NYSE scan
 /scan-stocks consumer staples       # sector-focused scan
 /scan-stocks CPS BABA HRL          # specific ticker analysis (skips screening)
+/scan-stocks CPS PYPL --terminal_save
+
+# Review existing holdings (Step 8)
+/review-holding CPS
+/review-holding PYPL HRL
+/review-holding CPS --terminal_save
 
 # Hydrate sector knowledge
 /sector-hydrate Banking             # narrow: Diversified + Regional Banks
 /sector-hydrate Healthcare          # full sector
 /sector-hydrate "Consumer Defensive"
 ```
+
+`--terminal_save` requests a best-effort execution log saved with the artifact. It does not expose Claude's hidden internal terminal transcript.
 
 ## Editing Knowledge Files
 
@@ -158,3 +171,30 @@ $ bash scripts/calc-score.sh floor 2.2 7.0 10 130 17.52
 ```
 
 The analyst runs this BEFORE writing any worst-case narrative. Trough inputs come from 5yr FMP historical data (lowest revenue, lowest FCF margin). See `knowledge/strategy-rules.md` Step 5 for the full trough-anchored worst case specification.
+
+## Forward Return Refresh (Step 8)
+
+Use this helper during holding reviews:
+
+```bash
+bash scripts/calc-score.sh forward-return <current_price> <revenue_b> <fcf_margin_pct> <multiple> <shares_m> <years>
+```
+
+It returns refreshed target price, forward CAGR, and checks for 30% hurdle / 10-15% guardrail.
+
+## Methodology Regression Harness (Phase 6)
+
+Use these docs to run regression checks after methodology-sensitive changes:
+- `docs/regression/methodology-canonical-suite.md`
+- `docs/regression/methodology-regression-template.md`
+- `docs/regression/methodology-regression-changelog.md`
+
+Run regression review after edits to:
+- `knowledge/strategy-rules.md`
+- `knowledge/scoring-formulas.md`
+- `knowledge/valuation-guidelines.md`
+- `.claude/agents/screener.md`
+- `.claude/agents/analyst.md`
+- `.claude/agents/orchestrator.md`
+- `.claude/agents/holding-reviewer.md`
+- `scripts/calc-score.sh`

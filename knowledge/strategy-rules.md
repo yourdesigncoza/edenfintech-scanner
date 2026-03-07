@@ -140,6 +140,12 @@ The worst case uses the same 4-input valuation formula as the base case, but wit
 | FCF Multiple | Industry baseline from valuation-guidelines.md MINUS full discount schedule | `valuation-guidelines.md` |
 | Shares | Current diluted shares (no buyback credit in worst case) | `metrics` endpoint |
 
+Default behavior is strict minimum-anchor selection. Calibrated exceptions are allowed only when they match documented deterministic triggers in `valuation-guidelines.md`:
+- `growth_revenue_bound_70pct_current`
+- `margin_outlier_adjustment_second_lowest`
+
+If an exception is used, the analyst must show the helper output and trigger condition in the trough-path notes.
+
 #### 5-Step Structured Process
 
 - **Step A:** Identify trough inputs from 5yr FMP data already fetched in Step 3

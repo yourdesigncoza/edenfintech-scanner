@@ -35,9 +35,22 @@ Output: `knowledge/sectors/<sector-slug>/` — checked into the repo, reused acr
 /scan-stocks                        # full NYSE scan (paid tier)
 /scan-stocks consumer staples       # sector-focused
 /scan-stocks CPS BABA HRL          # specific tickers (skips screening)
+/scan-stocks CPS PYPL --terminal_save
 ```
 
-### 3. Read the report
+### 3. Review an existing holding (Step 8)
+
+```
+/review-holding CPS
+/review-holding PYPL HRL
+/review-holding CPS --terminal_save
+```
+
+Outputs thesis status, catalyst tracking, forward-return refresh, and explicit sell-trigger checks.
+
+`--terminal_save` writes a best-effort execution log alongside the saved artifact. It is not a hidden Claude terminal transcript.
+
+### 4. Read the report
 
 Reports save to `data/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md`.
 
@@ -47,7 +60,7 @@ Each report contains:
 - Decision scores with position sizing recommendations
 - Epistemic confidence ratings (how trustworthy is the estimate?)
 
-### 4. What to do next
+### 5. What to do next
 
 After a scan completes, here's your decision tree:
 
@@ -86,6 +99,20 @@ After major changes to knowledge files, agents, or scoring logic:
 ```
 
 Produces a structured audit report with severity-rated findings, stress tests, and a confidence score. Saved to `data/result/`.
+
+### 6. Run methodology regression harness
+
+Use the canonical suite to detect methodology drift after rule/prompt/calculator changes:
+
+- Suite: `docs/regression/methodology-canonical-suite.md`
+- Case template: `docs/regression/methodology-regression-template.md`
+- Changelog: `docs/regression/methodology-regression-changelog.md`
+
+Review outcome categories:
+- `no_drift`
+- `soft_drift`
+- `material_drift`
+- `intentional_drift` (must be logged)
 
 ## How It Works
 
@@ -137,6 +164,7 @@ Epistemic confidence (1-5) adjusts effective probability via multiplier. Low con
 |------|----|
 | New sector to explore | `/sector-hydrate "Sector Name"` then `/scan-stocks sector name` |
 | Regular scan cycle | `/scan-stocks` or sector-focused scan |
+| Existing holding review | `/review-holding TICK` |
 | Portfolio change | Update `knowledge/current-portfolio.md` |
 | Spot-check a ticker | `/scan-stocks TICK` or `bash scripts/fmp-api.sh screen-data TICK` |
 | After strategy/agent changes | `/gemini-review` |

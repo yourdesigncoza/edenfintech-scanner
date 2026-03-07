@@ -1,5 +1,5 @@
 {
-  "updated": "2026-03-06",
+  "updated": "2026-03-07",
   "sectors": {
     "Consumer Defensive": {
       "status": "hydrated",
@@ -10,6 +10,53 @@
         "Beverages - Wineries & Distilleries",
         "Packaged Foods",
         "Household & Personal Products"
+      ]
+    },
+    "Consumer Cyclical": {
+      "status": "hydrated",
+      "hydrated_date": "2026-03-07",
+      "stale_after_days": 180,
+      "sub_sectors": [
+        "Auto - Parts",
+        "Auto - Dealerships",
+        "Specialty Retail",
+        "Restaurants",
+        "Apparel Manufacturing",
+        "Footwear & Accessories",
+        "Home Improvement Retail",
+        "Furnishings Fixtures & Appliances",
+        "Textile Manufacturing",
+        "Luxury Goods",
+        "Gambling",
+        "Resorts & Casinos",
+        "Travel Services",
+        "Packaging & Containers",
+        "Personal Services",
+        "Department Stores",
+        "Internet Retail",
+        "Lodging",
+        "Recreational Vehicles",
+        "Residential Construction",
+        "Auto Manufacturers"
+      ]
+    },
+    "Financial Services": {
+      "status": "hydrated",
+      "hydrated_date": "2026-03-07",
+      "stale_after_days": 180,
+      "sub_sectors": [
+        "Financial - Credit Services",
+        "Banks - Diversified",
+        "Banks - Regional",
+        "Insurance - Life",
+        "Insurance - Property & Casualty",
+        "Capital Markets",
+        "Financial Data & Stock Exchanges",
+        "Insurance - Diversified",
+        "Insurance Brokers",
+        "Mortgage Finance",
+        "Asset Management",
+        "Financial Conglomerates"
       ]
     }
   }

@@ -85,44 +85,72 @@ For each stock in the universe:
 
 ### Phase 1C: Step 2 Filter — The 5 Checks
 
-For each surviving stock, run all 5 checks. Use `bash scripts/fmp-api.sh screen-data TICKER` to get batch data.
+For each surviving stock, run all 5 checks and emit a structured check record. Use `bash scripts/fmp-api.sh screen-data TICKER` to get batch data.
 
-**Check 1: SOLVENCY**
-- Pull: cash, current debt, long-term debt, FCF from balance sheet and cash flow
-- FAIL if: solvency risk is real AND the stock price has NOT fallen enough to price in that risk (market still seems optimistic despite genuine survival questions)
-- PASS if: solvency risk IS priced in (dramatic decline, e.g., 80%+) AND company can likely survive — flag as "solvency_borderline" for Analyst
-- If borderline: flag as "solvency_borderline" for the Analyst to investigate further
+Deterministic helper commands (preferred where applicable):
+- `bash scripts/calc-score.sh solvency-snapshot <cash> <current_debt> <long_term_debt> <fcf>`
+- `bash scripts/calc-score.sh rev-share-trend <rev1> <rev2> <rev3> <rev4> <rev5> <shr1> <shr2> <shr3> <shr4> <shr5>`
+- `bash scripts/calc-score.sh median <series...>`
+- `bash scripts/calc-score.sh rough-hurdle <current_price> <revenue_b> <fcf_margin_pct> <multiple> <shares_m> <years>`
 
-**Check 2: DILUTION**
-- Pull: shares outstanding (5yr trend), SBC from cash flow, revenue from income statement
-- Calculate: SBC as % of revenue for each of last 5 years
-- FAIL if: SBC > 5% of revenue in latest year WITHOUT per-share revenue growing faster
-- FAIL if: shares outstanding increased AND revenue per share decreased (issuing shares to stay alive)
-- **IMMEDIATE DQ**: If shares were issued specifically to pay down debt or fund interest payments (check cash flow for equity proceeds concurrent with debt repayment) — near-immediate disqualification regardless of other metrics
-- If borderline: flag as "dilution_borderline"
+Required verdict enum per check:
+- `PASS`
+- `BORDERLINE_PASS`
+- `FAIL`
 
-**Check 3: REVENUE GROWTH**
-- Pull: revenue for last 10 years
-- Calculate: 5yr and 10yr CAGR
-- If negative/flat: use WebSearch to look for catalysts (new products, industry tailwinds, management changes)
-- FAIL if: no growth trend AND no identifiable catalysts
-- If borderline: flag as "growth_borderline"
+Required final stock outcome:
+- `PASS_TO_ANALYST`
+- `REJECT_AT_SCREEN`
 
-**Check 4: ROCE/ROIC**
-- Pull: ROIC from key metrics (10yr history)
-- Calculate: median ROIC over available history
-- FAIL if: median < 6% AND no cyclical recovery pattern AND worst in its peer group
-- For cyclicals: check if up-cycle ROIC reaches 10%+. If yes, acceptable even if median is lower.
-- If borderline: flag as "roic_borderline"
+#### Check 1: Solvency
+- Evidence minimum: cash, current debt, long-term debt, FCF, `% off ATH`
+- Use `solvency-snapshot` for standardized ratios and flags
+- `FAIL`: survival is genuinely doubtful and risk is not clearly priced in
+- `BORDERLINE_PASS`: survival uncertain, but stock is dramatically broken and evidence suggests plausible runway
+- `PASS`: solvency profile is acceptable for deep analysis
+- Borderline flag: `solvency_borderline`
 
-**Check 5: VALUATION**
-- Pull: current P/S, P/FCF, EV/FCF, EV/EBITDA from ratios
-- Pull: historical averages of same metrics
-- If current margins are depressed: calculate normalized P/FCF using historical FCF margin applied to current revenue
-- Estimate rough CAGR potential: can this stock reasonably return 30%/year for 2-3 years?
-- FAIL if: even with normalized margins and reasonable multiple, can't reach 25% CAGR
-- If estimated CAGR 25-29.9%: flag as "valuation_borderline" — screener's rough estimate has ±5% margin of error, analyst's detailed model is the real gate
-- If borderline: flag as "valuation_borderline"
+#### Check 2: Dilution
+- Evidence minimum: 5-year shares trend, 5-year revenue trend, latest SBC as % of revenue, rev/share trend output
+- Use `rev-share-trend` to anchor per-share economics
+- `FAIL`: SBC > 5% without growth, or shares up while rev/share down
+- `FAIL` (immediate disqualification): shares issued to service debt or interest
+- `BORDERLINE_PASS`: dilution elevated but per-share economics still improving
+- `PASS`: dilution not destroying per-share value
+- Borderline flag: `dilution_borderline`
+
+#### Check 3: Revenue Growth
+- Evidence minimum: 5-year and 10-year revenue trend plus catalyst check if trend weak
+- `FAIL`: no growth trend and no concrete catalyst
+- `BORDERLINE_PASS`: flat/weak trend but at least one specific catalyst exists
+- `PASS`: growth exists or catalyst support is strong and specific
+- Borderline flag: `growth_borderline`
+
+#### Check 4: ROCE/ROIC
+- Evidence minimum: ROIC history, median ROIC (use `median` helper), cyclicality context if applicable
+- `FAIL`: chronically below ~6% and no cyclical exception
+- `BORDERLINE_PASS`: median weak but full-cycle evidence shows recoverable economics
+- `PASS`: median at/above threshold or cyclical up-cycle supports recovery
+- Borderline flag: `roic_borderline`
+
+#### Check 5: Valuation
+- Evidence minimum: rough target logic + implied CAGR band with clear assumptions
+- Use `rough-hurdle` for quick screening estimate
+- `FAIL`: rough CAGR clearly below 25%
+- `BORDERLINE_PASS`: rough CAGR 25-29.9%
+- `PASS`: rough CAGR >= 30%
+- Borderline flag: `valuation_borderline`
+
+#### Step 2 Record Schema (mandatory per stock)
+
+Every stock that reaches Step 2 must include:
+- `check_name`
+- `verdict`
+- `evidence`
+- `threshold_or_rule`
+- `flag` (or `—`)
+
+A stock can pass to analyst with borderline checks, but only when all hard fails are absent. Any `FAIL` in a core check sets final outcome to `REJECT_AT_SCREEN`.
 
 ### Output Format
 
@@ -141,14 +169,25 @@ Return results as structured markdown:
 |--------|------|---------|-------|-----------|------------|------------|-----------|-------|-------|
 | XXX | Company Name | $1.2B | $15.30 | -72% | 8.5% | 6.2% | 1.5x | 8.3x | solvency_borderline |
 
+### Step 2 Check Records
+
+#### {TICKER} — Final Outcome: {PASS_TO_ANALYST or REJECT_AT_SCREEN}
+| Check | Verdict | Evidence | Threshold / Rule | Flag |
+|------|---------|----------|------------------|------|
+| Solvency | BORDERLINE_PASS | cash $X, current debt $Y, FCF $Z, -82% from ATH | priced-in risk + plausible survival | solvency_borderline |
+| Dilution | PASS | SBC 3.1% of revenue, rev/share CAGR +4.2% | SBC <= 5% or improving per-share economics | — |
+| Revenue | PASS | 5yr CAGR +2.6%, identified catalyst: {event} | growth exists OR catalyst is specific | — |
+| ROIC | PASS | median ROIC 8.1% | median >= 6% (or cyclical exception) | — |
+| Valuation | BORDERLINE_PASS | rough implied CAGR 27% | 25-29.9% = analyst gate | valuation_borderline |
+
 #### Cluster: {Next Industry}
 (repeat)
 
 ### Notable Rejections
 | Ticker | Failed At | Reason |
 |--------|-----------|--------|
-| YYY | Dilution | SBC 8% of revenue, shares +15% in 3 years |
-| ZZZ | ROIC | Median 3.2%, worst in peer group |
+| YYY | Dilution | `Check: Dilution = FAIL` -> SBC 8% of revenue, shares +15% in 3 years |
+| ZZZ | ROIC | `Check: ROIC = FAIL` -> Median 3.2%, worst in peer group |
 ```
 
 ## Rules
@@ -156,6 +195,7 @@ Return results as structured markdown:
 - Be ruthless. Most stocks should fail. 5-15 survivors from thousands is normal.
 - When in doubt, let it through with a flag — the Analyst will catch it.
 - Never compromise on: excluded industries, 30% CAGR hurdle, SBC-to-pay-debt.
+- Keep Step 2 evidence and verdict separate. Never output a verdict without threshold-linked evidence.
 - For cyclicals, evaluate the FULL business cycle, not just current trough.
 - Speed matters — batch API calls where possible, don't over-research at this stage.
 - If FMP API returns errors or missing data, note it in flags rather than failing the stock.

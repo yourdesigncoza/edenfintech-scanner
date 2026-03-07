@@ -44,6 +44,30 @@ Commands:
       Computes rolling 3-year CAGRs and determines trend direction.
       Use for revenue, FCF/share, or any annual metric.
 
+  rev-share-trend <rev1> <rev2> <rev3> <rev4> <rev5> <shr1> <shr2> <shr3> <shr4> <shr5>
+      Compute 5-year revenue/share series with trend and CAGR summary.
+      Inputs are annual values oldest to newest.
+
+  median <val1> [val2 ...]
+      Compute median for a numeric series. Useful for ROIC median checks.
+
+  solvency-snapshot <cash> <current_debt> <long_term_debt> <fcf>
+      Return standardized solvency summary and heuristic flags for Step 2.
+
+  rough-hurdle <current_price> <revenue_b> <fcf_margin_pct> <multiple> <shares_m> <years>
+      Quick screening valuation to estimate target price and implied CAGR band.
+      Used for Step 2 valuation pre-check; not a replacement for Step 5 valuation.
+
+  forward-return <current_price> <revenue_b> <fcf_margin_pct> <multiple> <shares_m> <years>
+      Refresh forward return from current price using valuation inputs.
+      Returns target price, forward CAGR, and hurdle/sell-guardrail checks.
+
+  revenue-floor <current_revenue_b> <min_5y_revenue_b> <revenue_cagr_5y_pct>
+      Apply deterministic growth-company revenue floor bound for downside calibration.
+
+  margin-floor <m1> <m2> <m3> <m4> <m5>
+      Select calibrated trough FCF margin from 5-year series with outlier handling.
+
   help
       Show this help text.
 
@@ -58,6 +82,13 @@ Examples:
   bash calc-score.sh effective-prob 65 3        # → 55.25%
   bash calc-score.sh floor 2.2 7.0 10 130 17.52    # trough floor price + downside %
   bash calc-score.sh momentum 1100 1000 950 1050 1150  # 5yr revenue trend
+  bash calc-score.sh rev-share-trend 1200 1180 1220 1260 1320 100 101 102 103 104
+  bash calc-score.sh median 4.1 8.9 6.0 2.3 7.4
+  bash calc-score.sh solvency-snapshot 750 420 980 160
+  bash calc-score.sh rough-hurdle 15.25 2.4 11 16 120 3
+  bash calc-score.sh forward-return 42.1 8.7 18 16 980 3
+  bash calc-score.sh revenue-floor 8.7 4.1 17
+  bash calc-score.sh margin-floor -9 2 4 3 5
 EOF
 }
 
@@ -423,6 +454,314 @@ else:
     result['note'] = 'Insufficient data for momentum assessment'
 
 print(json.dumps(result, indent=2))
+"
+    ;;
+
+rev-share-trend)
+    [[ $# -eq 10 ]] || err "rev-share-trend requires 10 args: <rev1> <rev2> <rev3> <rev4> <rev5> <shr1> <shr2> <shr3> <shr4> <shr5>"
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        validate_number "arg$i" "${!i}"
+    done
+
+    python3 -c "
+import json
+
+revenues = [float('$1'), float('$2'), float('$3'), float('$4'), float('$5')]
+shares = [float('$6'), float('$7'), float('$8'), float('$9'), float('${10}')]
+
+if any(s <= 0 for s in shares):
+    raise ValueError('all share values must be positive')
+
+rev_per_share = [round(revenues[i] / shares[i], 6) for i in range(5)]
+start_rps = rev_per_share[0]
+end_rps = rev_per_share[-1]
+
+if start_rps <= 0:
+    cagr = None
+else:
+    cagr = round(((end_rps / start_rps) ** (1.0 / 4.0) - 1.0) * 100, 2)
+
+total_change_pct = round(((end_rps / start_rps) - 1.0) * 100, 2) if start_rps > 0 else None
+
+if cagr is None:
+    trend = 'insufficient_data'
+elif cagr > 2:
+    trend = 'improving'
+elif cagr < -2:
+    trend = 'deteriorating'
+else:
+    trend = 'flat'
+
+result = {
+    'revenues': revenues,
+    'shares': shares,
+    'revenue_per_share': rev_per_share,
+    'rev_per_share_cagr_5y_pct': cagr,
+    'rev_per_share_total_change_pct': total_change_pct,
+    'trend': trend,
+}
+
+if trend == 'deteriorating':
+    result['gate'] = 'DILUTION_RISK'
+elif trend == 'flat':
+    result['gate'] = 'BORDERLINE'
+else:
+    result['gate'] = 'CLEAR_OR_IMPROVING'
+
+print(json.dumps(result, indent=2))
+"
+    ;;
+
+median)
+    [[ $# -ge 1 ]] || err "median requires at least 1 numeric arg: <val1> [val2 ...]"
+    for val in "$@"; do
+        validate_number "value" "$val"
+    done
+
+    python3 -c "
+import json
+import statistics
+
+vals = [float(x) for x in '$*'.split()]
+med = round(statistics.median(vals), 4)
+
+print(json.dumps({
+    'count': len(vals),
+    'values': vals,
+    'median': med
+}, indent=2))
+"
+    ;;
+
+solvency-snapshot)
+    [[ $# -eq 4 ]] || err "solvency-snapshot requires 4 args: <cash> <current_debt> <long_term_debt> <fcf>"
+    validate_number "cash" "$1"
+    validate_number "current_debt" "$2"
+    validate_number "long_term_debt" "$3"
+    validate_number "fcf" "$4"
+
+    python3 -c "
+import json
+
+cash = float('$1')
+current_debt = float('$2')
+long_term_debt = float('$3')
+fcf = float('$4')
+
+total_debt = current_debt + long_term_debt
+net_debt = total_debt - cash
+cash_to_current_debt = None if current_debt <= 0 else round(cash / current_debt, 2)
+cash_to_total_debt = None if total_debt <= 0 else round(cash / total_debt, 2)
+debt_to_fcf = None if fcf <= 0 else round(total_debt / fcf, 2)
+
+flags = []
+if current_debt > 0 and cash < current_debt:
+    flags.append('cash_below_current_debt')
+if fcf <= 0:
+    flags.append('negative_or_zero_fcf')
+if debt_to_fcf is not None and debt_to_fcf > 6:
+    flags.append('high_debt_to_fcf')
+if total_debt > 0 and cash_to_total_debt is not None and cash_to_total_debt < 0.25:
+    flags.append('low_cash_coverage')
+
+if len(flags) == 0:
+    risk_level = 'low'
+elif len(flags) <= 2:
+    risk_level = 'moderate'
+else:
+    risk_level = 'high'
+
+print(json.dumps({
+    'cash': cash,
+    'current_debt': current_debt,
+    'long_term_debt': long_term_debt,
+    'total_debt': total_debt,
+    'fcf': fcf,
+    'net_debt': round(net_debt, 2),
+    'cash_to_current_debt': cash_to_current_debt,
+    'cash_to_total_debt': cash_to_total_debt,
+    'debt_to_fcf': debt_to_fcf,
+    'risk_level': risk_level,
+    'flags': flags
+}, indent=2))
+"
+    ;;
+
+rough-hurdle)
+    [[ $# -eq 6 ]] || err "rough-hurdle requires 6 args: <current_price> <revenue_b> <fcf_margin_pct> <multiple> <shares_m> <years>"
+    validate_number "current_price" "$1"
+    validate_number "revenue_b" "$2"
+    validate_number "fcf_margin_pct" "$3"
+    validate_number "multiple" "$4"
+    validate_number "shares_m" "$5"
+    validate_number "years" "$6"
+
+    python3 -c "
+import json
+
+current_price = float('$1')
+revenue_b = float('$2')
+fcf_margin_pct = float('$3')
+multiple = float('$4')
+shares_m = float('$5')
+years = float('$6')
+
+if current_price <= 0:
+    raise ValueError('current_price must be positive')
+if shares_m <= 0:
+    raise ValueError('shares_m must be positive')
+if years <= 0:
+    raise ValueError('years must be positive')
+
+fcf_b = revenue_b * (fcf_margin_pct / 100.0)
+target_price = round((fcf_b * multiple * 1000.0) / shares_m, 2)
+cagr_pct = round(((target_price / current_price) ** (1.0 / years) - 1.0) * 100.0, 2)
+
+if cagr_pct >= 30:
+    band = 'CLEAR_PASS'
+elif cagr_pct >= 25:
+    band = 'BORDERLINE_PASS'
+else:
+    band = 'FAIL'
+
+print(json.dumps({
+    'current_price': current_price,
+    'revenue_b': revenue_b,
+    'fcf_margin_pct': fcf_margin_pct,
+    'multiple': multiple,
+    'shares_m': shares_m,
+    'years': years,
+    'target_price': target_price,
+    'implied_cagr_pct': cagr_pct,
+    'screening_band': band
+}, indent=2))
+"
+    ;;
+
+forward-return)
+    [[ $# -eq 6 ]] || err "forward-return requires 6 args: <current_price> <revenue_b> <fcf_margin_pct> <multiple> <shares_m> <years>"
+    validate_number "current_price" "$1"
+    validate_number "revenue_b" "$2"
+    validate_number "fcf_margin_pct" "$3"
+    validate_number "multiple" "$4"
+    validate_number "shares_m" "$5"
+    validate_number "years" "$6"
+
+    python3 -c "
+import json
+
+current_price = float('$1')
+revenue_b = float('$2')
+fcf_margin_pct = float('$3')
+multiple = float('$4')
+shares_m = float('$5')
+years = float('$6')
+
+if current_price <= 0:
+    raise ValueError('current_price must be positive')
+if shares_m <= 0:
+    raise ValueError('shares_m must be positive')
+if years <= 0:
+    raise ValueError('years must be positive')
+
+fcf_b = revenue_b * (fcf_margin_pct / 100.0)
+target_price = round((fcf_b * multiple * 1000.0) / shares_m, 2)
+forward_cagr_pct = round(((target_price / current_price) ** (1.0 / years) - 1.0) * 100.0, 2)
+
+hurdle_30 = forward_cagr_pct >= 30
+rapid_move_guardrail = forward_cagr_pct >= 15
+low_forward_return_warning = forward_cagr_pct < 10
+
+print(json.dumps({
+    'current_price': current_price,
+    'revenue_b': revenue_b,
+    'fcf_margin_pct': fcf_margin_pct,
+    'multiple': multiple,
+    'shares_m': shares_m,
+    'years': years,
+    'target_price': target_price,
+    'forward_cagr_pct': forward_cagr_pct,
+    'meets_30pct_hurdle': hurdle_30,
+    'meets_15pct_guardrail': rapid_move_guardrail,
+    'below_10pct_warning': low_forward_return_warning
+}, indent=2))
+"
+    ;;
+
+revenue-floor)
+    [[ $# -eq 3 ]] || err "revenue-floor requires 3 args: <current_revenue_b> <min_5y_revenue_b> <revenue_cagr_5y_pct>"
+    validate_number "current_revenue_b" "$1"
+    validate_number "min_5y_revenue_b" "$2"
+    validate_number "revenue_cagr_5y_pct" "$3"
+
+    python3 -c "
+import json
+
+current_rev = float('$1')
+min_rev_5y = float('$2')
+rev_cagr_5y = float('$3')
+
+if current_rev <= 0 or min_rev_5y <= 0:
+    raise ValueError('revenue values must be positive')
+
+bound_triggered = False
+rule = 'default_min_5y'
+
+# Growth-company bound:
+# If 5y CAGR >= 15% and min_5y is < 70% of current scale, use 70% floor.
+bounded_floor = round(current_rev * 0.70, 4)
+selected = min_rev_5y
+
+if rev_cagr_5y >= 15 and min_rev_5y < bounded_floor:
+    selected = bounded_floor
+    bound_triggered = True
+    rule = 'growth_revenue_bound_70pct_current'
+
+print(json.dumps({
+    'current_revenue_b': current_rev,
+    'min_5y_revenue_b': min_rev_5y,
+    'revenue_cagr_5y_pct': rev_cagr_5y,
+    'bounded_floor_70pct_current_b': bounded_floor,
+    'selected_revenue_floor_b': round(selected, 4),
+    'rule': rule,
+    'triggered': bound_triggered
+}, indent=2))
+"
+    ;;
+
+margin-floor)
+    [[ $# -eq 5 ]] || err "margin-floor requires 5 args: <m1> <m2> <m3> <m4> <m5>"
+    for i in 1 2 3 4 5; do
+        validate_number "m$i" "${!i}"
+    done
+
+    python3 -c "
+import json
+
+margins = [float('$1'), float('$2'), float('$3'), float('$4'), float('$5')]
+sorted_m = sorted(margins)
+lowest = sorted_m[0]
+second_lowest = sorted_m[1]
+
+outlier_triggered = False
+rule = 'default_min_5y'
+selected = lowest
+
+# Working-capital outlier adjustment:
+# If lowest is >=8pp below second-lowest, treat as anomaly and use second-lowest.
+if (second_lowest - lowest) >= 8:
+    selected = second_lowest
+    outlier_triggered = True
+    rule = 'margin_outlier_adjustment_second_lowest'
+
+print(json.dumps({
+    'margins_pct': margins,
+    'lowest_margin_pct': lowest,
+    'second_lowest_margin_pct': second_lowest,
+    'selected_margin_floor_pct': selected,
+    'rule': rule,
+    'triggered': outlier_triggered
+}, indent=2))
 "
     ;;
 

@@ -70,6 +70,11 @@ From the screener output:
 - Competitors in the same industry go in the same cluster
 - If a stock has no peers in the survivor list, it becomes a single-stock cluster
 - Aim for 2-4 stocks per cluster when possible
+- Extract each survivor's Step 2 Check Record (all five checks) and carry it forward
+- Build a per-stock Step 2 handoff bundle:
+  - `final_step2_outcome`
+  - `borderline_flags`
+  - `step2_check_record` (full evidence table)
 
 ### 3b. Sector Knowledge Check
 
@@ -129,7 +134,13 @@ For EACH cluster, use the Task tool to launch a general-purpose agent with this 
 
 Analyze this industry cluster: {cluster_name}
 Stocks: {TICK1, TICK2, TICK3}
-Screener flags: {any flags from Phase 1}
+Screener Step 2 handoff:
+{for each stock include:
+- Final Step 2 outcome
+- Borderline flags
+- Full Step 2 Check Record (Solvency, Dilution, Revenue, ROIC, Valuation with verdict/evidence/threshold/flag)}
+
+Use this Step 2 evidence as binding context for risk focus in Step 3-4 analysis.
 
 For each scored candidate, also provide a Structural Diagnosis:
 - Role: Driver (high conviction, big position) / Filler (decent, small position) / Watchlist (not ready)
@@ -150,7 +161,58 @@ Return the complete cluster analysis with scored candidates."
 Launch ALL clusters in parallel using multiple Task tool calls in a single message.
 Wait for all analyst results.
 
-### 4a. Epistemic Confidence Review
+### 4a. Step 3 Ranking Completeness Audit
+
+After collecting analyst outputs, before epistemic confidence review:
+
+1. For each cluster, verify output includes ALL of:
+   - competitor comparison table
+   - explicit quality ordering rationale
+   - `Cluster Ranking Record` with all stocks classified across:
+     - `Survival Quality`
+     - `Business Quality`
+     - `Return Quality`
+     - `Margin Trend Gate`
+     - `Final Cluster Status`
+   - cluster verdict with winner/backup/eliminated outcome
+
+2. Verify permanent-pass handling:
+   - if long-term margin erosion is described, stock must be marked `PERMANENT_PASS` and not advanced as a contender
+
+3. Verify backup-candidate logic:
+   - any retained non-winner must include method-consistent keep rationale:
+     - no earlier-step failure
+     - materially higher return potential
+     - limited alternatives
+
+4. If materially incomplete:
+   - add `cluster_ranking_incomplete` warning
+   - move affected candidate(s) to "Rejected at Analysis" with reason: `step3_non_compliant: cluster ranking incomplete`
+   - do not treat the cluster winner as fully reliable in final ranking notes
+
+5. Verify enum purity in the ranking record:
+   - `Survival Quality`, `Business Quality`, `Return Quality` must be exactly `Strong`, `Moderate`, or `Weak`
+   - `Margin Trend Gate` must be exactly `PASS` or `PERMANENT_PASS`
+   - `Final Cluster Status` must be exactly `CLEAR_WINNER`, `CONDITIONAL_WINNER`, `LOWER_PRIORITY`, or `ELIMINATED`
+   - If reasons are embedded inside enum cells -> reject with `step3_non_compliant: non-pure enum fields`
+
+### 4b. Step 4 Catalyst Quality Audit
+
+After Step 3 audit, before epistemic confidence review:
+
+1. For each scored candidate, verify analyst output includes:
+   - a structured `Catalyst Quality Record` (or equivalent structured catalyst classification)
+   - at least one `VALID_CATALYST`
+   - an `Issues-And-Fixes Evidence Table` (or equivalent paired issue/fix structure)
+   - management evidence statuses (`ANNOUNCED_ONLY`, `ACTION_UNDERWAY`, `EARLY_RESULTS_VISIBLE`, `PROVEN`)
+
+2. Reject conditions:
+   - Missing catalyst-quality structure -> move to "Rejected at Analysis" with reason: `step4_non_compliant: missing catalyst quality record`
+   - No `VALID_CATALYST` -> move to "Rejected at Analysis" with reason: `no_valid_catalyst`
+   - Missing issues/fixes paired evidence -> move to "Rejected at Analysis" with reason: `step4_non_compliant: issues-fixes evidence missing`
+   - Missing evidence status labels -> move to "Rejected at Analysis" with reason: `step4_non_compliant: management evidence status missing`
+
+### 4c. Epistemic Confidence Review
 
 After collecting all analyst results, before the consistency audit:
 
@@ -207,6 +269,7 @@ bash scripts/calc-score.sh effective-prob {base_probability} {confidence}
 4d. **Probability band validation**: Confirm analyst probability is a valid band (50/60/70/80). If not, flag as `non_compliant_probability` and round to nearest valid band:
    - <55% → 50%, 55-64% → 60%, 65-74% → 70%, 75%+ → 80%
    - Note in report: "Probability rounded: analyst assigned {n}%, corrected to {band}%"
+   - If the analyst narrative contains post-hoc override language (`override`, `bump`, `recalibrate`, or equivalent) after showing a band path, reject with reason: `probability_non_compliant: post_hoc_band_override`
 
 5. **Filter on effective probability**: If effective probability < 60% → move candidate to "Rejected at Analysis" with reason: "epistemic confidence filter (base {base}% x {multiplier} = {effective}%, below 60% threshold)"
 
@@ -223,12 +286,13 @@ bash scripts/calc-score.sh size {new_score} {cagr} {effective_probability} {down
 
 8. **Apply binary outcome override**: If Q4 = No AND confidence ≤ 3 → cap at 5% regardless of score
 
-### 4a2. Downside Compliance Audit
+### 4c2. Downside Compliance Audit
 
 After epistemic review, before the multiple consistency audit, verify each scored candidate's worst-case methodology:
 
 1. **Floor calc check**: Confirm the analyst output contains a `calc-score.sh floor` command invocation with JSON output. The trough path must trace each of the 4 inputs (revenue, FCF margin, multiple, shares) to a specific FMP data point.
    - **Missing floor calc** → reject: move to "Rejected at Analysis" with reason: "downside non-compliant: no floor calc"
+   - **Missing floor JSON output** → reject: move to "Rejected at Analysis" with reason: "downside non-compliant: missing floor json"
 
 2. **Heroic Optimism check**: Scan for any unresolved Heroic Optimism flags. A flag is "unresolved" if the analyst adjusted the floor upward without providing a 1-2 sentence justification, OR if justification was provided but any of these conditions are true:
    - Trough revenue used is above the company's actual lowest TTM revenue in 5yr FMP history
@@ -243,12 +307,27 @@ After epistemic review, before the multiple consistency audit, verify each score
 4. **Trough path completeness**: Verify the trough path table has all 4 rows (Revenue, FCF Margin, FCF Multiple, Shares) with non-empty Fiscal Year and FMP Data Point columns.
    - **Incomplete trough path** → reject: move to "Rejected at Analysis" with reason: "downside non-compliant: incomplete trough path — missing {input}"
 
-Candidates passing all 4 checks proceed to the multiple consistency audit. Add a line in the methodology notes section of the report:
+5. **Calibration-rule compliance** (Phase 5):
+   - If analyst reports default minimum-anchor rule: proceed
+   - If analyst reports exception rule, verify it is one of:
+     - `growth_revenue_bound_70pct_current`
+     - `margin_outlier_adjustment_second_lowest`
+     - `combined` (both approved rules triggered)
+   - Verify trigger condition and helper command output are shown
+   - If rule is unapproved or trigger evidence missing -> reject: move to "Rejected at Analysis" with reason: "downside non-compliant: calibration rule invalid or undocumented"
+
+6. **Downside normalization compliance**:
+   - If mechanical floor < 0 or mechanical downside > 100%, verify report explicitly states both:
+     - mechanical downside
+     - scored downside capped at 100%
+   - If score section uses 100% downside without stating the normalization path -> reject with reason: `downside non-compliant: unstated downside normalization`
+
+Candidates passing all downside checks proceed to the multiple consistency audit. Add a line in the methodology notes section of the report:
 ```
-- Downside methodology audited: floor calc present, Heroic Optimism resolved, TBV cross-check complete, trough path verified
+- Downside methodology audited: floor calc present, Heroic Optimism resolved, TBV cross-check complete, trough path verified, calibration rules compliant
 ```
 
-### 4b. Multiple Consistency Audit
+### 4d. Multiple Consistency Audit
 
 After the epistemic review, before ranking:
 
@@ -282,7 +361,7 @@ Once all analysts return:
       - Base case CAGR < 20%
       - Base case CAGR 20-29.9% WITHOUT exception evidence (no top-tier CEO or <6yr runway)
       - Base case probability < 60%
-      - No catalysts were identified (automatic pass per strategy rules)
+      - No valid catalyst was identified (automatic pass per strategy rules)
       - Score required ad-hoc adjustments or multiple revisions to reach its final value
     - **Exception candidates**: CAGR 20-29.9% with analyst label `EXCEPTION CANDIDATE` → collect into `exception_candidates` list. These are NOT ranked and NOT rejected — they appear in the "Pending Human Review" section.
     - **Ranked**: CAGR >= 30% and all other rules pass → proceed to ranking.
@@ -292,6 +371,10 @@ Once all analysts return:
    - Would any candidate breach 50% single-catalyst limit?
    - How does each candidate compare to weakest current holding?
    - Apply deployment scenario logic from scoring-formulas.md
+   - If any scanned ticker is already in `current-portfolio.md`, require explicit separation of:
+     - `new capital decision`
+     - `existing position action`
+     - this separation must appear in a dedicated `Current Holding Overlays` section even if the ticker was rejected at screening or analysis
 
 5. **Write the report** in this exact format:
 
@@ -313,12 +396,22 @@ Once all analysts return:
 - **Thesis:** {2-3 sentences on why this is a turnaround opportunity}
 - **Valuation:** Revenue ${n}B x FCF margin {n}% x {n}x = ${target} ({n}% CAGR over {n}yr)
   - Discount path: Baseline {n}x → {each discount with reason} → **{n}x**
+  - Valuation command: `{command}`
+  - Valuation JSON: `{json summary}`
+  - CAGR command: `{command}`
+  - CAGR JSON: `{json summary}`
 - **Worst case:** ${floor} ({n}% loss)
+  - Floor JSON: `{json summary}`
+  - Downside normalization: mechanical {n}% / scored {n}%
 - **Moats:** {summary}
 - **Catalysts:** {list with timelines}
 - **Management:** {grade} — {1-line reasoning}
 - **Suggested size:** {n}% | **Confidence flags:** {list}
 - **Decision Score:** Downside {n}% (adj {n}) × 0.45 = {n} + Probability {n}% × 0.40 = {n} + CAGR {n}% × 0.15 = {n} = **{score}**
+  - Score command: `{command}`
+  - Score JSON: `{json summary}`
+  - Size command: `{command}`
+  - Size JSON: `{json summary}`
   {If ceiling applied: "Ceiling: {condition} → capped at {n}%"}
 - **Epistemic Confidence:** {n}/5 ({n} "No" answers)
   - Operational risk: {Yes/No} — {1-line justification} — Evidence: {source}
@@ -368,17 +461,50 @@ For each exception candidate, include the same full analysis detail as ranked ca
 |--------|-----------|--------|
 (top 5-10 most interesting rejections)
 
+## Rejected at Analysis Detail Packets
+
+For each rejected-at-analysis ticker that reached valuation, probability, downside, or score computation, include:
+
+### {TICKER}
+- Rejection reason: {reason}
+- Valuation command: `{command}` {or `N/A`}
+- Valuation JSON: `{json summary}` {or `N/A`}
+- CAGR command: `{command}` {or `N/A`}
+- CAGR JSON: `{json summary}` {or `N/A`}
+- Floor command: `{command}` {or `N/A`}
+- Floor JSON: `{json summary}` {or `N/A`}
+- Downside normalization: mechanical {n}% / scored {n}% {or `N/A`}
+- Score command: `{command}` {or `N/A`}
+- Score JSON: `{json summary}` {or `N/A`}
+- Size command: `{command}` {or `N/A`}
+- Size JSON: `{json summary}` {or `N/A`}
+
+## Current Holding Overlays
+
+> Required whenever any scanned ticker already exists in `current-portfolio.md`. Include one subsection per held ticker regardless of whether it was ranked, rejected at screening, or rejected at analysis.
+
+### {TICKER}
+- Status in scan: {RANKED / REJECTED_AT_SCREENING / REJECTED_AT_ANALYSIS}
+- New capital decision: {ADD / DO NOT ADD}
+- Existing position action: {HOLD / HOLD_AND_MONITOR / TRIM / REDUCE / EXIT}
+- Reason: {keep Step 8 logic distinct from new-capital logic; if applicable, cite report section or holding review}
+
 ## Methodology Notes
 - Qualitative assessments (moats, management, probability) are LLM estimates — review critically
 - Valuation multiples involve judgment — verify reasoning matches your own assessment
 - Catalyst timelines are estimates based on public information as of scan date
+- Step 3 ranking completeness audited (cluster ranking record, quality ordering, permanent-pass handling, backup rationale)
+- Step 3 enum purity audited (no reasons embedded in structured fields)
+- Step 4 catalyst quality audited (valid catalyst requirement, issues-fixes evidence, management evidence status)
+- Existing holdings separated from new-capital decisions via explicit holding overlay
 - Valuation multiples verified via consistency audit (median multiple: {n}x, max deviation: {n}x)
 - All scoring math computed via calc-score.sh (deterministic, not LLM-generated)
 - Epistemic confidence assessed independently — reviewer never sees analyst probability or score
 - PCS answers are evidence-anchored — each answer cites a source or declares NO_EVIDENCE
 - Risk-type friction applied to PCS confidence where applicable (see scoring-formulas.md)
 - Threshold proximity warnings flag base probabilities within 2% of hard caps
-- Downside compliance audited: trough-anchored floor calc, Heroic Optimism resolution, TBV cross-check, trough path completeness
+- Downside compliance audited: trough-anchored floor calc, Heroic Optimism resolution, TBV cross-check, trough path completeness, explicit downside normalization where needed
+{If no candidates reached epistemic review: "- Epistemic confidence review not applicable after hard-rule rejection of all candidates"}
 
 ---
 *Scan completed {YYYY-MM-DD} using EdenFinTech deep value turnaround methodology*
@@ -413,6 +539,34 @@ if [[ -d "$STRATEGY_DOCS" ]]; then
     cp "$DATA_DIR/scans/{filename}" "$STRATEGY_DOCS/{filename}"
 fi
 ```
+
+### 6a. Final Report Compliance Audit
+
+Before saving or returning the report:
+
+1. Verify required sections exist exactly as named:
+   - `## Rejected at Analysis Detail Packets` if any ticker was rejected after valuation, downside, probability, or score work
+   - `## Current Holding Overlays` if any scanned ticker exists in `current-portfolio.md`
+2. Verify each rejected-at-analysis ticker has a full detail packet with command + JSON fields.
+3. Verify each held ticker has exactly one holding overlay entry, even if the ticker failed screening.
+4. If any of the above is missing:
+   - the report is INVALID
+   - revise the report before saving
+   - do not return a partial-compliance scan report
+
+### 6b. Optional Execution Log
+
+If the user request includes `--terminal_save` or `--terminal-save`:
+
+1. Save a best-effort execution log alongside the report:
+   - path: `docs/scans/logs/{YYYY-MM-DD}-{scan-type}-execution-log.md`
+2. This is not an internal Claude transcript. It must contain:
+   - key bash commands actually run
+   - raw calculator JSON blocks relied on in the report
+   - notable research commands and source URLs
+   - compliance-audit pass/fail notes
+   - report path
+3. Mention the execution-log path in the final user summary.
 
 ### 5b. Risk Factor Enrichment (manual approval required)
 
@@ -473,6 +627,9 @@ After writing the report, present a concise summary to the user:
 
 - Always read current-portfolio.md BEFORE compiling the report
 - Never skip the portfolio impact section — it's critical for decision-making
+- If a scanned ticker is already held, the report must include a `Current Holding Overlays` section with one entry per held ticker
+- If a ticker is rejected after valuation/scoring work, the report must include a `Rejected at Analysis Detail Packet`
+- Missing required sections is a compliance failure. Revise before returning.
 - If the screener returns 0 survivors, report that clearly ("No stocks met all criteria")
 - If an analyst agent fails or returns errors, note the gap in the report rather than crashing
 - The report is a RESEARCH TOOL, not financial advice — include the methodology notes disclaimer

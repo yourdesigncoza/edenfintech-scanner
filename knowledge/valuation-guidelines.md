@@ -66,6 +66,41 @@ When a Heroic Optimism flag is triggered, the analyst MUST provide a 1-2 sentenc
 
 Note: This test is separate from the existing base-case simplicity principle above. The base-case test checks for heroic assumptions in the price target. This test checks for heroic assumptions in the worst case (floor).
 
+## Downside Calibration Policy (Phase 5)
+
+Goal: keep downside deterministic while avoiding mechanically extreme "Frankenstein" floors in known edge cases.
+
+### Default Rule (still primary)
+
+Use trough anchors from 5-year history:
+- revenue: minimum 5-year TTM revenue
+- FCF margin: minimum 5-year annual FCF margin
+- multiple: industry baseline minus discounts
+- shares: current diluted shares
+
+### Approved Deterministic Exceptions
+
+Only these exceptions are allowed:
+
+1. `growth_revenue_bound_70pct_current`
+- Trigger: 5-year revenue CAGR >= 15% AND minimum 5-year revenue < 70% of current revenue
+- Action: use `max(min_5y_revenue, 70% of current revenue)` as trough revenue
+- Deterministic helper: `calc-score.sh revenue-floor`
+
+2. `margin_outlier_adjustment_second_lowest`
+- Trigger: lowest 5-year FCF margin is >= 8 percentage points below second-lowest
+- Action: use second-lowest margin as trough margin
+- Deterministic helper: `calc-score.sh margin-floor`
+
+### Audit Requirement
+
+When exception(s) are used, analysts must state:
+- rule name
+- trigger condition
+- helper output (JSON)
+
+Any unlisted downside adjustment is non-compliant.
+
 ## TBV Cross-Check
 
 After computing the worst-case floor price, cross-check against tangible book value per share (TBV/share) from the FMP balance sheet.

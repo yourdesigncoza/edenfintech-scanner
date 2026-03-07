@@ -15,6 +15,7 @@ Parse the user's input to determine scan type:
 - `/scan-stocks` or no arguments → **Full NYSE scan** (requires paid FMP tier)
 - `/scan-stocks {sector}` (e.g., "consumer staples") → **Sector-focused scan**
 - `/scan-stocks {TICK1} {TICK2}` (e.g., "CPS BABA HRL") → **Specific ticker analysis** (skips screening)
+- Optional flag: `--terminal_save` or `--terminal-save` → also save a best-effort execution log for review
 
 ## Prerequisites
 
@@ -41,6 +42,7 @@ Use the Task tool with subagent_type "general-purpose" and this prompt:
 
 Scan type: {full | sector: NAME | tickers: TICK1,TICK2,...}
 User request: {original user message}
+Terminal save requested: {yes | no}
 
 Run the complete two-phase pipeline and produce the final ranked report."
 ```
@@ -50,8 +52,9 @@ Run the complete two-phase pipeline and produce the final ranked report."
 Once the orchestrator returns:
 1. Present the executive summary to the user
 2. Show the path to the full saved report
-3. Offer to discuss any candidate in more detail
-4. If the user asks about a specific stock, pull additional data using the FMP helper script
+3. If `--terminal_save` was requested, also show the execution-log path and note that it is a best-effort execution log, not a hidden Claude transcript
+4. Offer to discuss any candidate in more detail
+5. If the user asks about a specific stock, pull additional data using the FMP helper script
 
 ## Token Budget
 

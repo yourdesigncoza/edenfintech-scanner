@@ -40,6 +40,19 @@ Read:
 - `$KNOWLEDGE_DIR/scoring-formulas.md`
 - `$KNOWLEDGE_DIR/current-portfolio.md`
 - `$KNOWLEDGE_DIR/valuation-guidelines.md`
+- `schemas/holding-review.template.json`
+- `schemas/holding-review.schema.json`
+- `scripts/report_json.py`
+
+## Output Gate
+
+The review is NOT complete until these artifacts exist on disk:
+- rendered markdown review
+- saved JSON artifact for the same review
+- docs copy of markdown
+- docs copy of JSON
+
+If any required artifact is missing, the review is incomplete. Do not present a final summary until the missing artifact is created.
 
 ## Data Tool
 
@@ -145,6 +158,25 @@ Choose exactly one:
 
 Tie verdict directly to thesis status + forward return + trigger state.
 
+## Structured Output Workflow
+
+Do NOT hand-write the final holding-review markdown from scratch.
+
+Instead:
+1. Build a JSON object matching `schemas/holding-review.template.json`
+2. Save it first as a JSON artifact
+3. Validate it
+4. Render markdown from the validated JSON using `scripts/report_json.py`
+5. Return paths only after all required artifacts exist
+
+Commands:
+```bash
+python3 scripts/report_json.py validate-holding <json_path>
+python3 scripts/report_json.py render-holding <json_path> <markdown_path>
+```
+
+The markdown below is the expected rendered shape. Treat it as semantic reference, not as the authoritative source of structure.
+
 ## Output Format
 
 ```markdown
@@ -228,4 +260,37 @@ Tie verdict directly to thesis status + forward return + trigger state.
 - Do not change the verdict by switching among multiple same-day scenarios without explaining why the prior base case was wrong.
 - Do not summarize calculator output as `-> target X, CAGR Y` in place of JSON. Raw JSON blocks are required.
 - If downside or floor reasoning is material to the verdict, include a calculator-backed `Worst-Case Floor` section.
-- If the user request includes `--terminal_save` or `--terminal-save`, save a best-effort execution log to `docs/scans/review/logs/{YYYY-MM-DD}-{ticker}-execution-log.md` with the key commands run, raw calculator JSON used, retrieval-path note, source URLs, and final review path. This is not an internal Claude transcript.
+- Save the JSON artifact before the markdown artifact.
+- The final markdown review must be rendered via `scripts/report_json.py`, not hand-written.
+
+## Save Artifacts
+
+Use these paths:
+```bash
+DATA_DIR=$(bash scripts/fmp-api.sh data-dir)
+mkdir -p "$DATA_DIR/scans/review" "$DATA_DIR/scans/review/json"
+mkdir -p docs/scans/review docs/scans/review/json
+
+# Naming
+# stem = {YYYY-MM-DD}-{ticker}-holding-review
+
+# JSON artifact
+# $DATA_DIR/scans/review/json/{YYYY-MM-DD}-{ticker}-holding-review.json
+
+# Markdown artifact
+# $DATA_DIR/scans/review/{YYYY-MM-DD}-{ticker}-holding-review.md
+
+# Validate and render
+python3 scripts/report_json.py validate-holding "$DATA_DIR/scans/review/json/{stem}.json"
+python3 scripts/report_json.py render-holding "$DATA_DIR/scans/review/json/{stem}.json" "$DATA_DIR/scans/review/{stem}.md"
+
+# Copy to docs
+cp "$DATA_DIR/scans/review/{stem}.md" "docs/scans/review/{stem}.md"
+cp "$DATA_DIR/scans/review/json/{stem}.json" "docs/scans/review/json/{stem}.json"
+
+# Required file checks
+test -f "$DATA_DIR/scans/review/json/{stem}.json"
+test -f "$DATA_DIR/scans/review/{stem}.md"
+test -f "docs/scans/review/{stem}.md"
+test -f "docs/scans/review/json/{stem}.json"
+```

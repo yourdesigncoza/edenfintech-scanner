@@ -1,31 +1,25 @@
-# Execution Log: CPS Holding Review v4
-**Date:** 2026-03-07
-**Ticker:** CPS
-**Review path:** `/home/laudes/zoot/projects/edenfintech-scanner/docs/scans/review/2026-03-07-CPS-holding-review-v4.md`
+# Execution Log: CPS Holding Review -- 2026-03-07
 
 ## Retrieval Path
-- Primary: Gemini Grounded Search (3 queries)
-- WebSearch fallback: not used
+- Primary research path: Gemini Grounded Search
+- WebSearch fallback used: no
+- Gemini queries:
+  1. "Cooper-Standard Holdings CPS 2025 full year earnings results Q4 2025 margins revenue guidance 2026"
+  2. "Cooper-Standard Holdings CPS CEO Jeffrey Edwards turnaround strategy margin recovery execution 2025 2026"
+  3. "Cooper-Standard Holdings CPS debt refinancing maturity schedule leverage reduction 2025 2026"
 
-## Gemini Queries
-1. "Cooper-Standard Holdings CPS latest earnings Q4 2025 results revenue margins guidance 2026"
-2. "Cooper-Standard Holdings CPS debt refinancing credit facility maturity 2026 2027"
-3. "Cooper-Standard Holdings CPS management CEO strategy turnaround progress 2025 2026"
-4. "Cooper-Standard CPS auto tariffs impact 2026 25% tariff on imported auto parts"
-
-## FMP Commands
-- `profile CPS`
-- `income CPS`
-- `cashflow CPS`
-- `ratios CPS`
-- `metrics CPS`
-- `price-history CPS`
-- `balance CPS`
+## FMP API Commands
+- `bash scripts/fmp-api.sh profile CPS`
+- `bash scripts/fmp-api.sh income CPS`
+- `bash scripts/fmp-api.sh cashflow CPS`
+- `bash scripts/fmp-api.sh ratios CPS`
+- `bash scripts/fmp-api.sh metrics CPS`
+- `bash scripts/fmp-api.sh price-history CPS`
+- `bash scripts/fmp-api.sh balance CPS`
 
 ## Calculator Commands and Raw JSON
-
-### Forward-Return (Base Case)
-```
+### Forward Return (Base Case)
+```bash
 bash scripts/calc-score.sh forward-return 32 3.0 5.5 12 18 2
 ```
 ```json
@@ -44,8 +38,8 @@ bash scripts/calc-score.sh forward-return 32 3.0 5.5 12 18 2
 }
 ```
 
-### Floor (Trough)
-```
+### Worst-Case Floor
+```bash
 bash scripts/calc-score.sh floor 2.33 -9.1 8 18 32
 ```
 ```json
@@ -61,8 +55,8 @@ bash scripts/calc-score.sh floor 2.33 -9.1 8 18 32
 }
 ```
 
-### Forward-Return (Conservative)
-```
+### Conservative Scenario
+```bash
 bash scripts/calc-score.sh forward-return 32 2.8 4.5 10 18 2
 ```
 ```json
@@ -82,21 +76,23 @@ bash scripts/calc-score.sh forward-return 32 2.8 4.5 10 18 2
 ```
 
 ## Source URLs
-- cooperstandard.com (Q4 2025 earnings, debt refinancing, investor presentations)
-- S&P Global Ratings (Mar 2026 auto sector outlook)
-- stocktitan.net (press releases)
-- FMP Stable API (financials, ratios, metrics, price history)
+- https://www.cooperstandard.com (Cooper Standard investor relations, earnings releases)
+- https://www.spglobal.com (S&P Global Ratings credit analysis, March 2026)
+- https://www.prnewswire.com (Cooper Standard Q4 2025 earnings press release, Feb 13, 2026)
+- https://stocktitan.net (Cooper Standard debt refinancing announcements)
+- https://seekingalpha.com (Cooper Standard earnings analysis)
+- FMP Stable API (financialmodelingprep.com/stable)
 
-## Key Data Points Used
-- Current price: $32.00 (Mar 6, 2026)
-- FY2025 revenue: $2.74B
-- FY2025 adj. EBITDA margin: 7.6% ($209.7M)
-- FY2025 gross margin: 11.7%
-- FY2025 FCF: $16.3M
-- FY2025 net loss: -$4.2M (vs -$78.7M FY2024)
-- Total debt: $1.26B
-- Total equity: -$83M (negative)
-- New business awards: $298M (74% EV/hybrid)
-- Debt refi: $1.1B at 9.25% due 2031 (Mar 4, 2026)
-- 2026 guidance: Revenue $2.7-2.9B, adj. EBITDA $260-300M (10%+ margin), capex $55-65M
-- Shares diluted: ~17.9M
+## Compliance Audit
+- JSON artifact saved: PASS -- data/scans/review/json/2026-03-07-CPS-holding-review.json
+- JSON validation passed: PASS
+- Markdown rendered via `scripts/report_json.py`: PASS
+- Required review sections present: PASS
+- Terminal save contract complete: PASS
+
+## Output Paths
+- JSON: `data/scans/review/json/2026-03-07-CPS-holding-review.json`
+- Markdown: `data/scans/review/2026-03-07-CPS-holding-review.md`
+- Docs JSON: `docs/scans/review/json/2026-03-07-CPS-holding-review.json`
+- Docs Markdown: `docs/scans/review/2026-03-07-CPS-holding-review.md`
+- Execution log: `docs/scans/review/logs/2026-03-07-CPS-execution-log.md`

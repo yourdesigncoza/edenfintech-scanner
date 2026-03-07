@@ -35,7 +35,6 @@ Output: `knowledge/sectors/<sector-slug>/` — checked into the repo, reused acr
 /scan-stocks                        # full NYSE scan (paid tier)
 /scan-stocks consumer staples       # sector-focused
 /scan-stocks CPS BABA HRL          # specific tickers (skips screening)
-/scan-stocks CPS PYPL --terminal_save
 ```
 
 ### 3. Review an existing holding (Step 8)
@@ -43,22 +42,21 @@ Output: `knowledge/sectors/<sector-slug>/` — checked into the repo, reused acr
 ```
 /review-holding CPS
 /review-holding PYPL HRL
-/review-holding CPS --terminal_save
 ```
 
 Outputs thesis status, catalyst tracking, forward-return refresh, and explicit sell-trigger checks.
 
-`--terminal_save` writes a best-effort execution log alongside the saved artifact. It is not a hidden Claude terminal transcript.
-
 ### 4. Read the report
 
 Reports save to `data/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md`.
+Structured JSON artifacts save alongside them in `data/scans/json/` and `docs/scans/json/`.
 
 Each report contains:
 - Executive summary with ranked candidates
 - Per-stock analysis: valuation, catalysts, moats, risks
 - Decision scores with position sizing recommendations
 - Epistemic confidence ratings (how trustworthy is the estimate?)
+- Deterministic markdown rendered from validated JSON structure
 
 ### 5. What to do next
 
@@ -113,6 +111,24 @@ Review outcome categories:
 - `soft_drift`
 - `material_drift`
 - `intentional_drift` (must be logged)
+
+### 7. Structured Report Pipeline
+
+Scan reports and holding reviews now support a JSON-first path:
+
+- Templates:
+  - `schemas/scan-report.template.json`
+  - `schemas/holding-review.template.json`
+- Schema references:
+  - `schemas/scan-report.schema.json`
+  - `schemas/holding-review.schema.json`
+- Validator/renderer:
+  - `python3 scripts/report_json.py validate-scan <json_path>`
+  - `python3 scripts/report_json.py render-scan <json_path> <markdown_path>`
+  - `python3 scripts/report_json.py validate-holding <json_path>`
+  - `python3 scripts/report_json.py render-holding <json_path> <markdown_path>`
+
+This is the local equivalent of structured outputs for Claude Code workflows: validate JSON first, then render markdown from the validated object.
 
 ## How It Works
 

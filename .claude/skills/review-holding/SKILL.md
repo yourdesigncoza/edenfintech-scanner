@@ -12,7 +12,6 @@ Run a Step 8 monitoring review for an existing portfolio position.
 
 - `/review-holding TICKER` -> single-holding review
 - `/review-holding TICK1 TICK2` -> batch holding review
-- Optional flag: `--terminal_save` or `--terminal-save` -> also save a best-effort execution log for review
 
 ## Prerequisites
 
@@ -38,7 +37,6 @@ Use the Task tool with subagent_type "general-purpose" and this prompt:
 
 Review holding: {TICKER}
 User request: {original user message}
-Terminal save requested: {yes | no}
 
 Return a complete Step 8 holding review with thesis status, catalyst tracking, forward-return refresh, and sell-trigger checks."
 ```
@@ -54,5 +52,11 @@ After reviews return:
 - `TRIM / REDUCE`
 - `EXIT`
 2. Highlight triggered sell checks (if any).
-3. Provide path to saved review artifact when requested.
-4. If `--terminal_save` was requested, also show the execution-log path and note that it is a best-effort execution log, not a hidden Claude transcript.
+3. Provide path to saved markdown review artifact.
+4. Provide path to the saved JSON artifact when available.
+
+Treat the run as incomplete if:
+- the markdown review path is missing
+- the JSON artifact path is missing
+
+If incomplete, do not present the review as finished. Ask the holding-reviewer to complete artifact generation first.

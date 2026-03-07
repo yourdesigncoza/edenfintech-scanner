@@ -1,0 +1,70 @@
+{
+  "report_type": "holding_review_v1",
+  "ticker": "<TICKER>",
+  "date": "<YYYY-MM-DD>",
+  "version": "<vN>",
+  "verdict": "<HOLD | HOLD_AND_MONITOR | ADD_CANDIDATE | TRIM / REDUCE | EXIT>",
+  "thesis_status": "<INTACT | INTACT_BUT_SLOWER | WEAKENED | BROKEN>",
+  "research_retrieval_note": {
+    "primary_retrieval_path": "<Gemini Grounded Search | Direct primary sources | Mixed>",
+    "gemini_tried_first": true,
+    "websearch_fallback_used": false,
+    "fallback_reason": "not needed"
+  },
+  "portfolio_context": {
+    "avg_cost": "",
+    "current_price": "",
+    "unrealized_gain": "",
+    "weight": "",
+    "original_target": "",
+    "thesis": "",
+    "prior_review": ""
+  },
+  "current_forward_return_cagr_pct": 0,
+  "sell_trigger_status": {
+    "t1": "no",
+    "t2": "no",
+    "t3": "no"
+  },
+  "thesis_integrity_checklist": [],
+  "catalyst_tracking": [],
+  "management_consistency": {
+    "what_management_said": "",
+    "what_management_did": "",
+    "match_mismatch": ""
+  },
+  "margin_competitor_drift": {
+    "margin_change": "",
+    "competitor_drift": "",
+    "open_risks": []
+  },
+  "forward_return_refresh": {
+    "base_case_assumptions": [],
+    "valuation_command": "",
+    "valuation_json": {},
+    "cagr_command": "",
+    "cagr_json": {},
+    "forward_return_command": "",
+    "forward_return_json": {},
+    "refreshed_target_price": "",
+    "refreshed_cagr_pct": 0,
+    "clears_30pct_hurdle": false,
+    "clears_rapid_move_guardrail": false
+  },
+  "worst_case_floor": {
+    "material": false,
+    "summary": "",
+    "floor_command": "",
+    "floor_json": {},
+    "trough_path": [],
+    "downside_normalization": ""
+  },
+  "optional_scenarios": [],
+  "sell_trigger_check": [],
+  "holding_verdict": {
+    "decision": "",
+    "reason": "",
+    "monitor_items": []
+  },
+  "sources": []
+}

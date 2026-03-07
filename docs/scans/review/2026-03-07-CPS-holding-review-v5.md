@@ -1,6 +1,6 @@
 # Holding Review: CPS
 **Date:** 2026-03-07
-**Version:** v6
+**Version:** v5
 **Verdict:** HOLD
 **Thesis Status:** INTACT
 
@@ -21,13 +21,13 @@
 | Current Price | $32.00 |
 | Unrealized Gain | +129% |
 | Weight | ~25% |
-| Prior Review Target | $110 (v5) |
+| Prior Review Target | $110 (v4) |
 | Original Target | $193 (stale -- superseded in v2) |
 | Target Date | 2028 |
 | Thesis | Auto-parts turnaround with operating leverage and margin recovery potential |
 | Original Catalysts | Margin recovery, execution stability |
 | Original Key Risks | Leverage, demand softness |
-| Prior Review Notes | v5 (2026-03-07): HOLD. Debt refi completed Mar 4, 2026 ($1.1B at 9.25% due 2031). FY2025 adj. EBITDA margin 7.6%. Management guided 10%+ for 2026. Base case $110, CAGR 85.4%. |
+| Prior Review Notes | v4 (2026-03-07): HOLD. Debt refi completed Mar 4, 2026 ($1.1B at 9.25% due 2031). FY2025 adj. EBITDA margin 7.6%. Management guided 10%+ for 2026. Base case $110, CAGR 85.4%. |
 
 ---
 
@@ -48,7 +48,7 @@
 
 4. **Are competitors pulling ahead?** No. Tier 2 auto parts peers (Dana, American Axle, Modine, Visteon) are not showing superior margin recovery trajectories. CPS's 74% EV/hybrid share of new business awards and China OEM pivot (targeting 60% of China revenue from Chinese OEMs by 2030, up from 36%) are differentiated positioning moves.
 
-5. **Which macro events actually matter to this business now?** Three items: (a) 25% auto parts tariffs -- effective since May 2025. Management stated net tariff effect on profitability expected to be zero due to global manufacturing footprint flexibility. (b) Auto production volumes -- S&P projects global production flat to -1% in 2026; Asia Pacific (+4.5%) offsets weakness. US light vehicle sales projected down to 15.6M from 16.1M. (c) Interest rates -- no longer a direct risk; debt is fixed at 9.25% through 2031.
+5. **Which macro events actually matter to this business now?** Three items: (a) 25% auto parts tariffs -- effective since May 2025. S&P forecasts CPS revenue growing 1.8% in 2026 despite tariffs; management stated net tariff effect on profitability expected to be zero. Global manufacturing footprint provides flexibility. (b) Auto production volumes -- S&P projects global production flat to -1% in 2026; Asia Pacific (+4.5%) offsets weakness. US light vehicle sales projected down to 15.6M from 16.1M. (c) Interest rates -- no longer a direct risk; debt is fixed at 9.25% through 2031.
 
 ---
 
@@ -56,16 +56,16 @@
 
 | Catalyst | Original Timing | Current Status | Evidence | Verdict |
 |---|---|---|---|---|
-| Margin recovery | Through 2028 | ON_TRACK | FY2025 adj. EBITDA margin 7.6% (up from ~6.6% FY2024, ~1.6% FY2023). Guided 10%+ for 2026 ($260-300M). Gross margin 11.7%, targeting 13%+. $64M cost savings delivered in FY2025. | Core thesis materializing on schedule |
-| Execution stability | Ongoing | ON_TRACK | Operating income $107M FY2025 vs $70M FY2024 (+53%). $298M new business awards. Ford Supplier of the Year. Three consecutive years of positive FCF. | Management executing consistently |
-| Deleveraging / debt management | Not originally specified | ON_TRACK | $1.1B at 9.25% due 2031 issued Mar 4, 2026. All 2026 and 2027 maturities fully redeemed. Net leverage target 2x by 2028. Current net debt/EBITDA ~5.1x improving with EBITDA growth. Liquidity $352M (cash $192M + undrawn revolver $161M). | Maturity wall eliminated. Deleveraging depends on EBITDA scaling. |
-| EV/hybrid transition positioning | 2025-2028 | ON_TRACK | 74% of $298M new awards tied to BEV/hybrid. 51% of new awards with Chinese OEM customers. Asia Pacific growth at 4.5%. China OEM revenue share target: 36% to 60% by 2030. | Secular positioning advancing |
+| Margin recovery | Through 2028 | ON_TRACK | FY2025 adj. EBITDA margin 7.6% (up from ~4.3% FY2024). Guided 10%+ for 2026 ($260-300M). Gross margin 11.7%, targeting 13%+. $64M cost savings delivered. | Core thesis materializing on schedule |
+| Execution stability | Ongoing | ON_TRACK | Operating income $107M FY2025 vs $70M FY2024 (+53%). $298M new business awards. 99% product quality scorecard. Ford Supplier of the Year. | Management executing consistently |
+| Deleveraging / debt management | Not originally specified | ON_TRACK | $1.1B at 9.25% due 2031 issued Mar 4, 2026. All 2026 and 2027 maturities fully redeemed. Net leverage target 2x by 2028. Net debt/EBITDA ~5.1x improving with EBITDA growth. | Maturity wall eliminated. Deleveraging depends on EBITDA scaling. |
+| EV/hybrid transition | 2025-2028 | ON_TRACK | 74% of $298M new awards tied to BEV/hybrid. 51% of new awards with Chinese OEM customers. Asia Pacific growth at 4.5%. China OEM revenue share target: 36% to 60% by 2030. | Secular positioning advancing |
 
 ---
 
 ## Management Consistency
-- **What management said:** Target margin expansion to 10%+ adj. EBITDA margin by 2026, mid-teens by 2030. Positive FCF. Refinance near-term debt. $250-300M new business award run rate. Sales target $3.8B by 2030. Triple ROIC by 2028. Net leverage to 2x by 2028.
-- **What management did:** Delivered $209.7M adj. EBITDA (high end of guidance). Positive FCF ($16.3M, third consecutive year). Completed $1.1B refinancing eliminating all 2026/2027 maturities. Secured $298M new business. Generated $64M cost savings. Revenue grew 0.4% to $2.74B.
+- **What management said:** Target margin expansion to 10%+ adj. EBITDA margin by 2026, mid-teens by 2030. Positive FCF. Refinance near-term debt. $250-300M new business award run rate. Sales target $3.8B by 2030. Triple ROIC by 2028.
+- **What management did:** Delivered $209.7M adj. EBITDA (high end of guidance). Positive FCF ($16.3M, third consecutive year). Completed $1.1B refinancing eliminating all 2026/2027 maturities. Secured $298M new business. Generated $64M cost savings. Revenue grew 0.4% to $2.74B (flat but on target).
 - **Match/Mismatch:** Match. All stated targets have been met or exceeded. Management credibility is high. CEO Edwards has been in role since 2012 with 39+ years of automotive industry experience.
 
 ---
@@ -153,7 +153,7 @@ bash scripts/calc-score.sh forward-return 32 3.0 5.5 12 18 2
 
 ## Worst-Case Floor
 
-CPS has negative trough FCF margins in the 5-year history (FY2021: -9.1%, FY2022: -4.2%). Negative trough FCF margin produces a mechanically negative floor price, implying 100%+ downside. The business has moved substantially away from trough conditions: three consecutive years of positive FCF, EBITDA margin 7.6% and rising, debt refinanced to 2031. Negative equity (-$83M) means TBV is also negative.
+CPS has negative trough FCF margins in the 5-year history (FY2021: -9.1%, FY2022: -4.2%). Negative trough FCF margin produces a mechanically negative floor price, implying 100%+ downside. The business has moved substantially away from trough conditions: three consecutive years of positive FCF, EBITDA margin 7.6% and rising, debt refinanced to 2031.
 
 **Floor command:**
 ```
@@ -212,8 +212,8 @@ bash scripts/calc-score.sh forward-return 32 2.8 4.5 10 18 2
 
 ## Sell Trigger Check
 - **Sell trigger 1 (target reached / forward <30%):** NO -- Forward CAGR 85.4%, well above 30% hurdle. Stock would need to reach ~$93 for forward returns to approach 15%.
-- **Sell trigger 2 (rapid move / forward <10-15%):** NO -- At $32, price is far below any rapid-move trigger level. Guardrail would activate around $93+.
-- **Sell trigger 3 (fundamental thesis break):** NO -- Thesis is strengthening. Margin recovery on track. Debt refinanced through 2031. Management executing on all commitments. EV/hybrid positioning advancing. Tariff impact assessed as manageable.
+- **Sell trigger 2 (rapid move / forward <10-15%):** NO -- At $32, price is far below any trigger level. Rapid-move guardrail would activate around $93+.
+- **Sell trigger 3 (fundamental thesis break):** NO -- Thesis is strengthening. Margin recovery on track. Debt refinanced through 2031. Management executing on all commitments. EV/hybrid positioning advancing. Tariff impact assessed as 'muted' by management and manageable per S&P analysis.
 
 ---
 
@@ -230,6 +230,6 @@ bash scripts/calc-score.sh forward-return 32 2.8 4.5 10 18 2
 
 ---
 
-*Sources: Cooper Standard Q4 2025 / FY2025 Earnings Release (Feb 13, 2026), Cooper Standard Debt Refinancing Press Release (Mar 4, 2026), S&P Global Ratings CPS Credit Analysis (Mar 2026), Gemini Grounded Search, FMP Stable API*
+*Sources: Cooper Standard Q4 2025 Earnings Release (Feb 13, 2026), Cooper Standard Debt Refinancing Press Release (Mar 4, 2026), S&P Global Ratings CPS Credit Analysis (Mar 2026), Gemini Grounded Search, FMP Stable API*
 
-Execution log: `docs/scans/review/logs/2026-03-07-CPS-execution-log.md`
+Execution log: `docs/scans/review/logs/2026-03-07-CPS-execution-log-v5.md`

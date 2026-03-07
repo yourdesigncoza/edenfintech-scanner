@@ -1,0 +1,27 @@
+{
+  "report_type": "scan_report_v1",
+  "title": "EdenFinTech Stock Scan",
+  "date": "<YYYY-MM-DD>",
+  "version": "<vN>",
+  "scan_parameters": {
+    "universe": "<NYSE | Specific tickers | Sector>",
+    "focus": "<sector or tickers>",
+    "stocks_scanned": 0,
+    "api": "Financial Modeling Prep"
+  },
+  "executive_summary": [
+    "<summary bullet 1>",
+    "<summary bullet 2>"
+  ],
+  "ranked_candidates": [],
+  "pending_human_review": [],
+  "portfolio_impact": [
+    "<portfolio impact bullet>"
+  ],
+  "rejected_at_screening": [],
+  "rejected_at_analysis_detail_packets": [],
+  "current_holding_overlays": [],
+  "methodology_notes": [
+    "<methodology note>"
+  ]
+}

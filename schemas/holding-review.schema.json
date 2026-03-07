@@ -1,0 +1,114 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "EdenFinTech Holding Review",
+  "type": "object",
+  "required": [
+    "report_type",
+    "ticker",
+    "date",
+    "version",
+    "verdict",
+    "thesis_status",
+    "research_retrieval_note",
+    "portfolio_context",
+    "current_forward_return_cagr_pct",
+    "sell_trigger_status",
+    "thesis_integrity_checklist",
+    "catalyst_tracking",
+    "management_consistency",
+    "margin_competitor_drift",
+    "forward_return_refresh",
+    "worst_case_floor",
+    "sell_trigger_check",
+    "holding_verdict",
+    "sources"
+  ],
+  "properties": {
+    "report_type": {
+      "type": "string",
+      "const": "holding_review_v1"
+    },
+    "ticker": { "type": "string" },
+    "date": { "type": "string" },
+    "version": { "type": "string" },
+    "verdict": {
+      "type": "string",
+      "enum": ["HOLD", "HOLD_AND_MONITOR", "ADD_CANDIDATE", "TRIM / REDUCE", "EXIT"]
+    },
+    "thesis_status": {
+      "type": "string",
+      "enum": ["INTACT", "INTACT_BUT_SLOWER", "WEAKENED", "BROKEN"]
+    },
+    "research_retrieval_note": {
+      "type": "object",
+      "required": [
+        "primary_retrieval_path",
+        "gemini_tried_first",
+        "websearch_fallback_used",
+        "fallback_reason"
+      ],
+      "properties": {
+        "primary_retrieval_path": { "type": "string" },
+        "gemini_tried_first": { "type": "boolean" },
+        "websearch_fallback_used": { "type": "boolean" },
+        "fallback_reason": { "type": "string" }
+      }
+    },
+    "portfolio_context": { "type": "object" },
+    "current_forward_return_cagr_pct": { "type": "number" },
+    "sell_trigger_status": { "type": "object" },
+    "thesis_integrity_checklist": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "catalyst_tracking": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "management_consistency": { "type": "object" },
+    "margin_competitor_drift": { "type": "object" },
+    "forward_return_refresh": {
+      "type": "object",
+      "required": [
+        "valuation_command",
+        "valuation_json",
+        "cagr_command",
+        "cagr_json",
+        "refreshed_target_price",
+        "refreshed_cagr_pct",
+        "clears_30pct_hurdle",
+        "clears_rapid_move_guardrail"
+      ],
+      "properties": {
+        "valuation_command": { "type": "string" },
+        "valuation_json": { "type": "object" },
+        "cagr_command": { "type": "string" },
+        "cagr_json": { "type": "object" },
+        "refreshed_target_price": { "type": ["string", "number"] },
+        "refreshed_cagr_pct": { "type": "number" },
+        "clears_30pct_hurdle": { "type": "boolean" },
+        "clears_rapid_move_guardrail": { "type": "boolean" }
+      }
+    },
+    "worst_case_floor": {
+      "type": "object",
+      "required": ["material"],
+      "properties": {
+        "material": { "type": "boolean" }
+      }
+    },
+    "optional_scenarios": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "sell_trigger_check": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "holding_verdict": { "type": "object" },
+    "sources": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}

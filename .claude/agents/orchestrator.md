@@ -35,6 +35,19 @@ KNOWLEDGE_DIR=$(bash scripts/fmp-api.sh knowledge-dir)
 ```
 - `$KNOWLEDGE_DIR/current-portfolio.md` — Current holdings for portfolio impact checks
 - `$KNOWLEDGE_DIR/scoring-formulas.md` — For final ranking and deployment scenario analysis
+- `schemas/scan-report.template.json` — Required top-level JSON contract for scan output
+- `schemas/scan-report.schema.json` — Schema reference for future structured-output parity
+- `scripts/report_json.py` — Local validator and markdown renderer
+
+## Output Gate
+
+The scan is NOT complete until these artifacts exist on disk:
+- rendered markdown report
+- saved JSON artifact for the same report
+- docs copy of markdown
+- docs copy of JSON
+
+If any required artifact is missing, the scan is incomplete. Do not present a final summary until the missing artifact is created.
 
 ## Your Process
 
@@ -376,7 +389,35 @@ Once all analysts return:
      - `existing position action`
      - this separation must appear in a dedicated `Current Holding Overlays` section even if the ticker was rejected at screening or analysis
 
-5. **Write the report** in this exact format:
+5. **Build structured JSON first, then render the report**
+
+Do NOT hand-write the final scan markdown from scratch.
+Do NOT return a markdown-only report.
+
+Instead:
+1. Build a JSON object matching `schemas/scan-report.template.json`
+2. Save it to a JSON artifact path first
+3. Validate it
+4. Render markdown from the validated JSON using `scripts/report_json.py`
+5. Confirm the rendered markdown contains the required sections after rendering, not before
+6. Return paths only after all required artifacts exist
+
+Commands:
+```bash
+python3 scripts/report_json.py validate-scan <json_path>
+python3 scripts/report_json.py render-scan <json_path> <markdown_path>
+```
+
+Required final JSON keys:
+- `rejected_at_analysis_detail_packets`
+- `current_holding_overlays`
+
+If any scanned ticker is already held, `current_holding_overlays` must be non-empty.
+If any ticker was rejected after valuation/probability/downside/score work, `rejected_at_analysis_detail_packets` must be non-empty.
+
+The markdown structure below is the expected rendered shape. Treat it as semantic reference, not as the authoritative source of structure.
+
+Rendered markdown:
 
 ```markdown
 # EdenFinTech Stock Scan — {YYYY-MM-DD}
@@ -510,7 +551,7 @@ For each rejected-at-analysis ticker that reached valuation, probability, downsi
 *Scan completed {YYYY-MM-DD} using EdenFinTech deep value turnaround methodology*
 ```
 
-6. **Save the report**:
+6. **Save JSON, validate, then render the report**:
 
 **Filename convention**: `{YYYY-MM-DD}-{scan-type}-scan-report.md`
 - Full scan → `2026-02-28-full-nyse-scan-report.md`
@@ -518,12 +559,18 @@ For each rejected-at-analysis ticker that reached valuation, probability, downsi
 - Specific tickers → `2026-02-28-CPS-BABA-HRL-scan-report.md`
 
 The scan-type slug is lowercase, hyphenated, derived from the scan parameters.
+Use:
+- `stem = {YYYY-MM-DD}-{scan-type}-scan-report`
 
-**Primary**: data directory (persists across plugin updates):
+**Primary JSON artifact**:
 ```bash
 DATA_DIR=$(bash scripts/fmp-api.sh data-dir)
 mkdir -p "$DATA_DIR/scans"
-# Write report to: $DATA_DIR/scans/{filename}
+mkdir -p "$DATA_DIR/scans/json"
+# Write JSON to: $DATA_DIR/scans/json/{stem}.json
+# Validate JSON: python3 scripts/report_json.py validate-scan "$DATA_DIR/scans/json/{stem}.json"
+# Render markdown to: $DATA_DIR/scans/{filename}
+# Render command: python3 scripts/report_json.py render-scan "$DATA_DIR/scans/json/{stem}.json" "$DATA_DIR/scans/{filename}"
 ```
 
 **Secondary copies** (if directories exist):
@@ -532,6 +579,8 @@ mkdir -p "$DATA_DIR/scans"
 PLUGIN_DOCS="docs/scans"
 mkdir -p "$PLUGIN_DOCS"
 cp "$DATA_DIR/scans/{filename}" "$PLUGIN_DOCS/{filename}"
+mkdir -p "$PLUGIN_DOCS/json"
+cp "$DATA_DIR/scans/json/{stem}.json" "$PLUGIN_DOCS/json/{stem}.json"
 
 # Strategy project
 STRATEGY_DOCS="/home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans"
@@ -549,24 +598,18 @@ Before saving or returning the report:
    - `## Current Holding Overlays` if any scanned ticker exists in `current-portfolio.md`
 2. Verify each rejected-at-analysis ticker has a full detail packet with command + JSON fields.
 3. Verify each held ticker has exactly one holding overlay entry, even if the ticker failed screening.
-4. If any of the above is missing:
+4. Verify the rendered markdown came from `scripts/report_json.py`, not hand-written markdown.
+5. Run explicit file checks:
+   ```bash
+   test -f "$DATA_DIR/scans/json/{stem}.json"
+   test -f "$DATA_DIR/scans/{filename}"
+   test -f "docs/scans/{filename}"
+   test -f "docs/scans/json/{stem}.json"
+   ```
+6. If any of the above is missing:
    - the report is INVALID
    - revise the report before saving
    - do not return a partial-compliance scan report
-
-### 6b. Optional Execution Log
-
-If the user request includes `--terminal_save` or `--terminal-save`:
-
-1. Save a best-effort execution log alongside the report:
-   - path: `docs/scans/logs/{YYYY-MM-DD}-{scan-type}-execution-log.md`
-2. This is not an internal Claude transcript. It must contain:
-   - key bash commands actually run
-   - raw calculator JSON blocks relied on in the report
-   - notable research commands and source URLs
-   - compliance-audit pass/fail notes
-   - report path
-3. Mention the execution-log path in the final user summary.
 
 ### 5b. Risk Factor Enrichment (manual approval required)
 

@@ -30,6 +30,7 @@ An on-demand NYSE stock scanner using the EdenFinTech deep value turnaround stra
 - **Sector Researcher** (`.claude/agents/sector-researcher.md`): Leaf agent for sector research. 2-phase: Gemini Grounded Search queries then Claude synthesis.
 - **FMP API script** (`scripts/fmp-api.sh`): Bash wrapper around Financial Modeling Prep **Stable API** (`https://financialmodelingprep.com/stable`).
 - **Holding Reviewer** (`.claude/agents/holding-reviewer.md`): Step 8 monitoring workflow for existing positions.
+- **Structured report renderer** (`scripts/report_json.py`): Validates JSON artifacts and renders final markdown reports/reviews.
 - **Gemini Grounded Search script** (`scripts/gemini-search.sh`): Bash wrapper around Gemini API with Google Search grounding. Free tier: 500 req/day (Flash), 1500/day (Pro). Cached to `data/cache/gemini-search/` (1-day TTL).
 - **Perplexity API script** (`scripts/perplexity-api.sh`): Retained as fallback. Cached to `data/cache/perplexity/` (1-day TTL).
 
@@ -40,6 +41,7 @@ Data flows between agents via Task tool prompt/response.
 - All agent/skill files use project-relative paths: `scripts/`, `.claude/agents/`, `knowledge/`. Never hardcode absolute paths.
 - API keys live in `data/.env`. Free tier: 250 req/day (sector scans). Paid tier needed for full NYSE scans.
 - Scan reports save to `data/scans/{YYYY-MM-DD}-{scan-type}-scan-report.md` (primary), with copies to `docs/scans/` and `/home/laudes/zoot/projects/strategy_EdenFinTech/docs/scans/`. Naming: `full-nyse`, `consumer-defensive`, or `CPS-BABA-HRL`.
+- Structured JSON artifacts save alongside reports in `data/scans/json/` and `docs/scans/json/`. Holding-review JSON artifacts save in `data/scans/review/json/` and `docs/scans/review/json/`.
 - Strategy has hard rules that must never be bypassed: 30% CAGR hurdle, no-catalysts = pass, excluded industries list, 12-position max, 50% single-theme cap.
 - Agent YAML frontmatter defines tool permissions: orchestrator has `Task`, screener/analyst do not. All agents have `Bash`, `Read`, `Write`, `Grep`, `Glob`, `WebSearch`, `WebFetch`.
 
@@ -90,20 +92,16 @@ bash scripts/fmp-api.sh profile CPS
 /scan-stocks                        # full NYSE scan
 /scan-stocks consumer staples       # sector-focused scan
 /scan-stocks CPS BABA HRL          # specific ticker analysis (skips screening)
-/scan-stocks CPS PYPL --terminal_save
 
 # Review existing holdings (Step 8)
 /review-holding CPS
 /review-holding PYPL HRL
-/review-holding CPS --terminal_save
 
 # Hydrate sector knowledge
 /sector-hydrate Banking             # narrow: Diversified + Regional Banks
 /sector-hydrate Healthcare          # full sector
 /sector-hydrate "Consumer Defensive"
 ```
-
-`--terminal_save` requests a best-effort execution log saved with the artifact. It does not expose Claude's hidden internal terminal transcript.
 
 ## Editing Knowledge Files
 
@@ -112,6 +110,16 @@ bash scripts/fmp-api.sh profile CPS
 - `knowledge/scoring-formulas.md` — Decision scoring math, position sizing breakpoints.
 - `knowledge/strategy-rules.md` — Complete 8-step strategy reference. Source of truth.
 - `knowledge/valuation-guidelines.md` — FCF multiple baselines by industry.
+
+## Structured Report Files
+
+- `schemas/scan-report.template.json`
+- `schemas/scan-report.schema.json`
+- `schemas/holding-review.template.json`
+- `schemas/holding-review.schema.json`
+- `scripts/report_json.py`
+
+Use these when you need deterministic report shape or need to troubleshoot missing sections in generated markdown.
 
 ## Caching
 

@@ -38,6 +38,9 @@ For each candidate, you receive:
 - **Risk factors** (key risks identified by the analyst)
 - **Catalysts** (identified catalysts with timelines)
 - **Moat assessment** (competitive advantage summary)
+- **Dominant Risk Type** — the analyst's classification of the dominant risk
+  (Operational/Financial, Cyclical/Macro, Regulatory/Political,
+  Legal/Investigation, or Structural fragility (SPOF))
 
 You do NOT receive: probability estimate, decision score, position size, or valuation details.
 
@@ -64,7 +67,7 @@ Answer each question Yes or No with:
 **Answering guidelines:**
 - **Q1 (Operational):** "Yes" if the thesis depends on execution (cost cuts, margin recovery, restructuring). "No" if the dominant risk is regulatory action, litigation outcome, or existential threat.
 - **Q2 (Regulatory):** "Yes" if the business operates in a stable regulatory environment. "No" if a single regulatory decision could materially alter the outcome (FDA approval, antitrust ruling, tariff change).
-- **Q3 (Precedent):** "Yes" if similar companies in similar situations have completed comparable turnarounds. "No" if the situation is genuinely novel or the outcome depends on unprecedented conditions. Use the Gemini Grounded Search script (preferred) or `WebSearch` (fallback) to verify precedents if uncertain:
+- **Q3 (Precedent):** Answer "Yes" ONLY if you can cite a specific, named historical precedent in the evidence field (e.g., "Synovus 2009-2013 recovered from NPL crisis"). If no named precedent exists, answer "No". "No" if the situation is genuinely novel or the outcome depends on unprecedented conditions. Use the Gemini Grounded Search script (preferred) or `WebSearch` (fallback) to verify precedents if uncertain:
   ```bash
   bash scripts/gemini-search.sh ask "Has a company in [industry] successfully recovered from [situation]? Name specific examples with outcomes."
   ```
@@ -96,30 +99,55 @@ Flag these as "Human Judgment: {specific item}" — these are NOT automatic fail
 
 ## Output Format
 
-Return structured markdown for ALL candidates:
+Return a JSON block for each candidate inside a markdown code fence:
 
-```markdown
-## Epistemic Confidence Assessment
+### {TICKER}
 
-### {TICKER} — Confidence: {n}/5
+```json
+{
+  "ticker": "{TICKER}",
+  "q1_operational": {
+    "answer": "Yes|No",
+    "justification": "1-line specific justification",
+    "evidence": "source or NO_EVIDENCE"
+  },
+  "q2_regulatory": {
+    "answer": "Yes|No",
+    "justification": "1-line",
+    "evidence": "source or NO_EVIDENCE"
+  },
+  "q3_precedent": {
+    "answer": "Yes|No",
+    "justification": "1-line",
+    "evidence": "source or NO_EVIDENCE"
+  },
+  "q4_nonbinary": {
+    "answer": "Yes|No",
+    "justification": "1-line",
+    "evidence": "source or NO_EVIDENCE"
+  },
+  "q5_macro": {
+    "answer": "Yes|No",
+    "justification": "1-line",
+    "evidence": "source or NO_EVIDENCE"
+  },
+  "no_count": 0,
+  "raw_confidence": 5,
+  "risk_type_acknowledged": "{analyst's Dominant Risk Type}",
+  "human_judgment_flags": ["flag1", "flag2"]
+}
+```
 
-| # | Question | Answer | Justification | Evidence |
-|---|----------|--------|---------------|----------|
-| 1 | Operational risk? | {Yes/No} | {1-line specific justification} | {source or NO_EVIDENCE} |
-| 2 | Regulatory discretion minimal? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
-| 3 | Historical precedent? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
-| 4 | Non-binary outcome? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
-| 5 | Macro/geo limited? | {Yes/No} | {1-line} | {source or NO_EVIDENCE} |
+{If question 4 = No AND raw_confidence <= 3: "**Binary outcome override applies** — max 5% position"}
 
-**"No" count:** {n} → **Confidence: {score}/5** (multiplier: x{multiplier})
-{If question 4 = No AND confidence <= 3: "**Binary outcome override applies** — max 5% position"}
-
-**Human Judgment Flags:**
-{If any: "- {flag description}" per line}
-{If none: "None identified"}
+**Key rules:**
+- Output JSON, not markdown tables
+- Echo `risk_type_acknowledged` (the analyst's classification) — do NOT compute friction (that's the orchestrator's job)
+- `no_count` and `raw_confidence` are computed by you from the 5-question answers
+- `human_judgment_flags` replaces freeform text — use an empty array if none
+- You still do NOT see probability, score, or position size
 
 (repeat for each candidate)
-```
 
 ## Rules
 

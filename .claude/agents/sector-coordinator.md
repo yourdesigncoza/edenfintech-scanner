@@ -126,7 +126,7 @@ After all researchers return:
 
 4. **Write `valuation.md`:**
    - Compile valuation approaches from all sub-sectors
-   - Note where standard FCF multiples DON'T apply (e.g., banks use P/TBV)
+   - Note where standard FCF multiples DON'T apply (e.g., some sectors use specialized valuation methods such as asset-based, subscriber-based, or reserve-based)
    - Cross-reference with `$KNOWLEDGE_DIR/valuation-guidelines.md`
 
 5. **Write `evidence-requirements.md`:**
@@ -136,7 +136,7 @@ After all researchers return:
    - Q3 (Precedent): Where to find turnaround history for this sector?
    - Q4 (Non-binary): What gradient outcomes are typical?
    - Q5 (Macro/geo): What macro factors matter most?
-   For each, specify WHERE to find the data (e.g., "CET1 Ratio — 10-K Item 8 or FMP Key Metrics").
+   For each, specify the exact filing section, metric source, or API field where this data can be verified.
 
 6. **Write `precedents.md`:**
    - Compile turnaround precedent tables from all sub-sectors

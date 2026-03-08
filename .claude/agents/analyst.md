@@ -5,8 +5,8 @@ description: |
 
   <example>
   Context: Screener returned survivors, orchestrator needs deep analysis
-  user: "Analyze this auto parts cluster: CPS, AAP, DORM"
-  assistant: "I'll use the analyst agent to run Steps 3-6 on the auto parts cluster"
+  user: "Analyze this {industry} cluster: {TICKER1}, {TICKER2}, {TICKER3}"
+  assistant: "I'll use the analyst agent to run Steps 3-6 on the {industry} cluster"
   <commentary>
   Analyst receives a cluster and runs the full qualitative + valuation pipeline.
   </commentary>
@@ -359,7 +359,7 @@ For each surviving stock:
 2. **Assign base case probability** using banding discipline (see scoring-formulas.md "Probability Banding"):
    - Read sector Q6 turnaround base rate (e.g., "4 of 7 recovered → ~57% → 60% band")
    - If no sector knowledge or no Q6 precedents: default to **50%** band
-   - Name closest historical precedent (e.g., "Synovus 2009-2013")
+   - Name closest historical precedent (e.g., "{Company} {year range}" — cite specific named precedents from sector knowledge or public record)
    - Apply Likert modifiers: Management (+10/0/-10), Balance sheet (+10/0/-10), Market conditions (+10/0/-10)
    - Net adjustment → snap to nearest band: **50% / 60% / 70% / 80%** only
    - Apply probability ceilings AFTER banding (ceiling may override band downward)
@@ -544,7 +544,10 @@ Enum purity rule:
 - **Catalysts:** {bulleted list with timelines}
 - **Moat Summary:** {1-2 sentence moat assessment}
 - **Dominant Risk Type:** {Operational/Financial | Cyclical/Macro | Regulatory/Political | Legal/Investigation | Structural fragility (SPOF)} — classify based on which risk category would most likely cause the thesis to fail. Choose ONE dominant type.
-  - **Active litigation override:** If the company has an active class-action lawsuit, SEC investigation, DOJ probe, or pending regulatory enforcement action, the dominant risk type MUST be Legal/Investigation regardless of other risk factors. Active litigation = binary outcome risk that supersedes operational concerns.
+  - **Litigation risk classification:**
+    - If active litigation is MATERIAL (potential liability >10% of market cap, or management distraction is the primary thesis risk, or regulatory outcome could fundamentally alter the business model): → Set Dominant Risk Type = Legal/Investigation
+    - If litigation is ROUTINE or SECONDARY (standard IP disputes, employment suits, regulatory compliance without existential threat): → Keep the dominant operational/cyclical/regulatory classification and note litigation as a secondary risk factor
+    - Always document the materiality assessment: "{lawsuit/investigation} — estimated exposure: {amount or qualitative}, materiality: {material/routine}"
 
 (repeat for each stock in cluster)
 

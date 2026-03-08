@@ -171,7 +171,22 @@ Cite every company name, date, dollar figure, and percentage with a source URL."
 bash scripts/gemini-search.sh ask \
 "Return factual data with inline source citations. Structured tables where applicable.
 {sub-sector} turnaround examples: companies that recovered from fundamental distress (not sector-wide panic selloffs).
-Turnaround = fundamental distress only: NPL>5%, CAMELS 4-5 rating, capital ratio <4%, or active enforcement action. Do NOT include sector-wide panic selloffs (SVB contagion 2023, GFC fear 2008) as turnarounds — those are price dislocations, not distress recoveries.
+
+First, determine the standard distress indicators for {sub_sector} — the sector-specific
+metrics that distinguish fundamental distress from temporary underperformance.
+(Examples: for banks this might be NPL ratios and capital adequacy; for retailers,
+same-store-sales decline and store closures; for SaaS, churn and cash burn rate.
+Derive the right metrics for THIS sub-sector rather than applying a fixed checklist.)
+
+Then, using those indicators, identify companies that experienced genuine fundamental
+distress and attempted a turnaround. Do NOT include sector-wide panic selloffs
+(SVB contagion 2023, GFC fear 2008) as turnarounds — those are price dislocations,
+not distress recoveries.
+
+Fallback definition if sector-specific metrics are unclear: any company that fell 60%+
+from ATH due to company-specific fundamental deterioration (not sector-wide macro drawdowns
+or temporary panic selloffs).
+
 Include: company name, distress period, peak distress metrics, key recovery actions, timeline from trough to recovery, and stock outcome.
 Cite every company name, date, dollar figure, and percentage with a source URL."
 ```

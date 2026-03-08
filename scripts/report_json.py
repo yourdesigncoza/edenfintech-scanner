@@ -56,6 +56,49 @@ def require_bool(obj, key, label):
         fail(f"{label}.{key} must be a boolean")
 
 
+VALID_RISK_TYPES = {
+    "Operational/Financial", "Cyclical/Macro", "Regulatory/Political",
+    "Legal/Investigation", "Structural fragility (SPOF)",
+}
+
+PCS_KEYS = ["q1_operational", "q2_regulatory", "q3_precedent", "q4_nonbinary", "q5_macro"]
+
+
+def warn(message: str) -> None:
+    print(f"WARNING: {message}", file=sys.stderr)
+
+
+def validate_epistemic(epi, context=""):
+    """Validate an epistemic_confidence object. Raises on structural errors, warns on missing optional fields."""
+    if not isinstance(epi, dict):
+        fail(f"{context}epistemic_confidence must be a dict, got {type(epi).__name__}")
+    for key in PCS_KEYS:
+        if key not in epi:
+            fail(f"{context}epistemic_confidence missing required key: {key}")
+        check = epi[key]
+        if not isinstance(check, dict):
+            fail(f"{context}{key} must be a dict")
+        for field in ["answer", "justification", "evidence"]:
+            if field not in check:
+                fail(f"{context}{key} missing required field: {field}")
+        if check["answer"] not in ("Yes", "No"):
+            fail(f"{context}{key}.answer must be 'Yes' or 'No', got '{check['answer']}'")
+    for key in ["no_count", "raw_confidence", "risk_type", "risk_type_friction",
+                "adjusted_confidence", "multiplier", "effective_probability"]:
+        if key not in epi:
+            fail(f"{context}epistemic_confidence missing required key: {key}")
+    if epi["risk_type"] not in VALID_RISK_TYPES:
+        warn(f"{context}risk_type '{epi['risk_type']}' not in canonical enum")
+    if not (0 <= epi.get("no_count", 0) <= 5):
+        fail(f"{context}no_count must be 0-5")
+    if not (1 <= epi.get("raw_confidence", 1) <= 5):
+        fail(f"{context}raw_confidence must be 1-5")
+    if not (1 <= epi.get("adjusted_confidence", 1) <= 5):
+        fail(f"{context}adjusted_confidence must be 1-5")
+    if not (-2 <= epi.get("risk_type_friction", 0) <= 0):
+        fail(f"{context}risk_type_friction must be -2 to 0")
+
+
 def pretty_json(value) -> str:
     return json.dumps(value, indent=2, ensure_ascii=True)
 
@@ -148,6 +191,14 @@ def validate_scan(data):
             fail(f"current_holding_overlays[{idx}].new_capital_decision invalid")
         if item["existing_position_action"] not in valid_existing_action:
             fail(f"current_holding_overlays[{idx}].existing_position_action invalid")
+    for idx, cand in enumerate(data.get("ranked_candidates", [])):
+        if "epistemic_confidence" in cand:
+            validate_epistemic(cand["epistemic_confidence"],
+                              context=f"ranked_candidates[{idx}].")
+    for idx, pkt in enumerate(data.get("rejected_at_analysis_detail_packets", [])):
+        if "epistemic_confidence" in pkt:
+            validate_epistemic(pkt["epistemic_confidence"],
+                              context=f"rejected_at_analysis[{idx}].")
 
 
 def validate_holding(data):
@@ -277,22 +328,47 @@ def render_scan_candidate(candidate):
     if candidate.get("epistemic_confidence"):
         epi = candidate["epistemic_confidence"]
         if isinstance(epi, dict):
-            if epi.get("summary"):
-                lines.append(f"- **Epistemic Confidence:** {epi['summary']}")
-            for check in epi.get("checks", []):
-                lines.append(
-                    f"  - {check.get('name', 'Check')}: {check.get('answer', '')} -- {check.get('justification', '')} -- Evidence: {check.get('evidence', '')}"
-                )
-            for field in [
-                "risk_type_friction",
-                "effective_probability",
-                "confidence_cap",
-                "binary_override",
-                "threshold_proximity_warning",
+            adj = epi.get("adjusted_confidence", epi.get("raw_confidence", "?"))
+            raw = epi.get("raw_confidence", "?")
+            no_ct = epi.get("no_count", "?")
+            lines.append(f"- **Epistemic Confidence:** {adj}/5 ({no_ct} \"No\" answers)")
+            for key, label in [
+                ("q1_operational", "Operational risk"),
+                ("q2_regulatory", "Regulatory discretion"),
+                ("q3_precedent", "Historical precedent"),
+                ("q4_nonbinary", "Non-binary outcome"),
+                ("q5_macro", "Macro/geo limited"),
             ]:
-                if epi.get(field):
-                    label = field.replace("_", " ").title()
-                    lines.append(f"  - {label}: {epi[field]}")
+                check = epi.get(key)
+                if isinstance(check, dict):
+                    lines.append(
+                        f"  - {label}: {check.get('answer', '')} -- "
+                        f"{check.get('justification', '')} -- "
+                        f"Evidence: {check.get('evidence', '')}"
+                    )
+            if epi.get("risk_type_friction") is not None and epi["risk_type_friction"] != 0:
+                rt = epi.get("risk_type", "Unknown")
+                friction = epi["risk_type_friction"]
+                note = epi.get("friction_note", "")
+                lines.append(
+                    f"  - Risk-type friction: {rt} -> {friction} "
+                    f"(raw {raw}/5 -> adjusted {adj}/5)"
+                    + (f" -- {note}" if note else "")
+                )
+            if epi.get("effective_probability") is not None:
+                mult = epi.get("multiplier", "?")
+                eff = epi["effective_probability"]
+                lines.append(f"  - Effective probability: base x{mult} = {eff}%")
+            if epi.get("confidence_cap_pct") is not None:
+                lines.append(f"  - Confidence cap: {epi['confidence_cap_pct']}%")
+            if epi.get("binary_override"):
+                lines.append("  - Binary outcome override: max 5%")
+            if epi.get("threshold_proximity_warning"):
+                lines.append(
+                    f"  - **Threshold proximity warning**: {epi['threshold_proximity_warning']}"
+                )
+            for flag in epi.get("human_judgment_flags", []):
+                lines.append(f"  - Human review: {flag}")
     if candidate.get("probability_sensitivity"):
         rows = []
         for item in candidate["probability_sensitivity"]:

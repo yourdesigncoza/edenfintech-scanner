@@ -231,6 +231,7 @@ After collecting all analyst results, before the consistency audit:
 
 1. **Extract epistemic input** for each scored candidate from analyst output:
    - Ticker, industry, thesis summary, risk factors, catalysts, moat assessment
+   - Dominant Risk Type (from analyst's Epistemic Input — must be one of the 5 canonical types)
    - **Strip probability estimate and decision score** — the epistemic reviewer must NOT see these
 
 2. **Spawn the epistemic reviewer agent** via Task tool:
@@ -249,55 +250,106 @@ Assess epistemic confidence for these candidates:
 - Key Risks: {risk list}
 - Catalysts: {catalyst list with timelines}
 - Moat Assessment: {moat summary}
+- Dominant Risk Type: {from analyst's Epistemic Input — must be one of the 5 canonical types}
 
 Return the structured confidence assessment for all candidates."
 ```
 
-3. **Receive confidence scores** and apply to each candidate.
+3a. **Parse and validate epistemic reviewer output**:
+   - Extract JSON from markdown code fences (```json ... ```)
+   - For each candidate, validate required keys: `ticker`, `q1_operational` through `q5_macro`, `no_count`, `raw_confidence`, `risk_type_acknowledged`, `human_judgment_flags`
+   - Each PCS check (`q1`-`q5`) must have `answer` (Yes|No), `justification`, and `evidence`
+   - **If reviewer output is malformed** (unparseable JSON, missing required keys, ticker mismatch, or extra prose corrupting the fence):
+     - Log: `"epistemic_review_failed: {reason}"`
+     - **Do NOT silently skip** — reject the candidate with reason: `"epistemic review parse failure: {reason}"`
+     - This is a pipeline error, not a soft degradation. The candidate cannot proceed without valid epistemic assessment.
 
-3b. **Apply risk-type friction** (see scoring-formulas.md "Risk-Type PCS Friction"):
+   - **Normalize `risk_type_acknowledged`** against the canonical enum:
+     - Exact match → use as-is
+     - Common variants → map: "Cyclical" | "Cyclical & Macro" → "Cyclical/Macro", "Regulatory" → "Regulatory/Political", "Legal" → "Legal/Investigation", "SPOF" → "Structural fragility (SPOF)"
+     - If no match after normalization → flag as `"risk_type_mismatch"` in `human_judgment_flags` and use analyst's original `Dominant Risk Type` for friction lookup
+
+3b. **Apply risk-type friction** (deterministic rules):
    - Read each candidate's `Dominant Risk Type` from the analyst's Epistemic Input
-   - Look up friction modifier from the table:
-     - Operational/Financial → 0
-     - Cyclical/Macro → -1 (unless Q3=Yes with named precedents → 0)
-     - Regulatory/Political → -1 to -2 (unless clear precedent → -1)
-     - Legal/Investigation → -2 (likely Q4=No already)
-     - Structural fragility (SPOF) → -1 (also set binary flag if not already set)
-   - Compute: `adjusted_confidence = max(1, raw_confidence - friction)`
-   - Use `adjusted_confidence` for all downstream calculations
-   - If friction is confirmatory (PCS answers already captured the risk), use the lower end of friction ranges
-   - Note the adjustment: "Risk-type friction: {type} → -{n} (raw {raw}/5 → adjusted {adj}/5)"
+   - Verify the epistemic reviewer's `risk_type_acknowledged` matches
+   - Look up friction and apply conditional override:
 
-4. **Compute effective probability** for each candidate:
+   | Risk Type | Default Friction | Override Condition | Overridden Friction |
+   |-----------|------------------|--------------------|---------------------|
+   | Operational/Financial | 0 | — | — |
+   | Cyclical/Macro | -1 | Q3=Yes with named precedent | 0 |
+   | Regulatory/Political | -2 | Q2=Yes (stable regulatory environment) | -1 |
+   | Legal/Investigation | -2 | — (no override) | — |
+   | Structural fragility (SPOF) | -1 | — (also set binary flag) | — |
+
+   - Compute: `adjusted_confidence = max(1, raw_confidence - abs(friction))`
+   - Record: `friction_note` explaining why override did/didn't apply, format: "{risk_type}, Q{n}={answer} -> friction {value}"
+
+3c. **Probability band normalization** (MUST happen before effective probability):
+   - Confirm analyst probability is a valid band (50/60/70/80)
+   - If not, round to nearest: <55% → 50%, 55-64% → 60%, 65-74% → 70%, 75%+ → 80%
+   - Note: "Probability rounded: analyst assigned {n}%, corrected to {band}%"
+   - If post-hoc override language detected (`override`, `bump`, `recalibrate`, or equivalent) → reject: `probability_non_compliant: post_hoc_band_override`
+   - **All downstream computation uses the NORMALIZED band, not the raw value**
+
+4. **Compute effective probability** using normalized base probability:
 ```bash
-bash scripts/calc-score.sh effective-prob {base_probability} {confidence}
+bash scripts/calc-score.sh effective-prob {normalized_base_prob} {adjusted_confidence}
 ```
+(MUST use the band-normalized probability, never the raw analyst value)
 
-4c. **Threshold-hugging detection**: Check if the analyst's base probability is within 2% of any hard cap:
-   - If base probability is 60-62% → flag: `threshold_proximity_warning: base {n}% is within 2% of 60% hard cap`
-   - If base probability is 65-67% and a probability ceiling applies (3yr+ decline, CEO <1yr) → flag: `threshold_proximity_warning: base {n}% is within 2% of {ceiling}% ceiling`
-   - If base probability is 60% exactly → flag: `threshold_proximity_warning: base probability AT the 60% hard cap — review for threshold anchoring`
+Note: Probability ceilings (3yr decline → 65%, negative equity → 60%, CEO <1yr → 65%)
+apply to the analyst's BASE probability assignment. Epistemic friction only reduces
+effective probability below base — ceilings cannot be violated by the epistemic pipeline.
+No re-validation needed.
+
+4c. **Threshold-hugging detection**: Check if the NORMALIZED probability is within 2% of any hard cap:
+   - If probability is 60% exactly → flag: `threshold_proximity_warning: base probability AT the 60% hard cap — review for threshold anchoring`
+   - If probability is 60% and a probability ceiling applies → flag: `threshold_proximity_warning: base {n}% is AT the {ceiling}% ceiling`
    - These are warnings only — they don't reject the candidate. They surface fragility for human scrutiny.
 
-4d. **Probability band validation**: Confirm analyst probability is a valid band (50/60/70/80). If not, flag as `non_compliant_probability` and round to nearest valid band:
-   - <55% → 50%, 55-64% → 60%, 65-74% → 70%, 75%+ → 80%
-   - Note in report: "Probability rounded: analyst assigned {n}%, corrected to {band}%"
-   - If the analyst narrative contains post-hoc override language (`override`, `bump`, `recalibrate`, or equivalent) after showing a band path, reject with reason: `probability_non_compliant: post_hoc_band_override`
+5. **Assemble the `epistemic_confidence` JSON object** for each candidate:
+   - Copy the 5 PCS check objects (`q1_operational` through `q5_macro`) from reviewer output
+   - Copy `no_count` and `raw_confidence` from reviewer output
+   - Set `risk_type` from analyst's Dominant Risk Type
+   - Set `risk_type_friction` from friction table lookup
+   - Set `friction_note` with override explanation
+   - Set `adjusted_confidence` from step 3b computation
+   - Look up `multiplier` from confidence-to-multiplier table
+   - Set `effective_probability` from step 4 computation
+   - Set `confidence_cap_pct` from confidence-to-size-cap table (null if confidence=5)
+   - Set `binary_override` = true if reviewer's `q4_nonbinary.answer` == "No" AND adjusted_confidence <= 3
+   - Set `threshold_proximity_warning` from step 4c (null if none)
+   - **Merge** `human_judgment_flags`: start with reviewer's list, then append any locally generated flags (e.g., `risk_type_mismatch` from Step 3a). Do NOT overwrite.
 
-5. **Filter on effective probability**: If effective probability < 60% → move candidate to "Rejected at Analysis" with reason: "epistemic confidence filter (base {base}% x {multiplier} = {effective}%, below 60% threshold)"
+   This assembled object goes into the candidate's JSON (whether ranked or rejected).
 
-6. **Recompute decision score** using effective probability:
+6. **Filter on probability** — two distinct checks:
+
+   a. **Base probability compliance**: If analyst's normalized base probability band < 60% → reject with reason:
+      `"base probability below threshold (base {base}% < 60% hard cap)"`
+      This indicates the ANALYST found insufficient evidence for a viable turnaround.
+
+   b. **Epistemic confidence filter**: If base >= 60% but effective probability < 60% → reject with reason:
+      `"epistemic confidence filter (base {base}% x {multiplier} = {effective}%, below 60% threshold)"`
+      This indicates the EPISTEMIC REVIEWER found the probability too uncertain to trust.
+
+   Both go to "Rejected at Analysis" but with different rejection reasons.
+
+7. **Recompute decision score** using effective probability:
 ```bash
-bash scripts/calc-score.sh score {downside} {base_probability} {cagr} {confidence}
+bash scripts/calc-score.sh score {downside} {effective_probability} {cagr}
+```
+(effective_probability already incorporates PCS multiplier — do NOT pass confidence again)
+
+8. **Recompute position size** with confidence cap:
+```bash
+# Read Q4 answer from the epistemic reviewer's structured output
+# If reviewer's q4_nonbinary.answer == "No", add binary flag
+bash scripts/calc-score.sh size {new_score} {cagr} {effective_probability} {downside} {adjusted_confidence} [binary]
 ```
 
-7. **Recompute position size** with confidence cap:
-```bash
-# If analyst's Q4 (non-binary) was "No", add binary flag
-bash scripts/calc-score.sh size {new_score} {cagr} {effective_probability} {downside} {confidence} [binary]
-```
-
-8. **Apply binary outcome override**: If Q4 = No AND confidence ≤ 3 → cap at 5% regardless of score
+9. **Apply binary outcome override**: If `q4_nonbinary.answer` = "No" AND adjusted_confidence ≤ 3 → cap at 5% regardless of score
 
 ### 4c2. Downside Compliance Audit
 
@@ -356,14 +408,13 @@ After the epistemic review, before ranking:
 Once all analysts return:
 
 1. **Collect all scored candidates** from all clusters
-1b. **Compute Probability Sensitivity** for each candidate using calc-score.sh:
+1b. **Compute Probability Sensitivity** for each candidate using calc-score.sh (orchestrator responsibility):
     ```bash
-    # For each candidate, run score at 55%, 60%, 65%, 70%, 75% probability
-    bash scripts/calc-score.sh score {downside} 55 {cagr}
+    # For each candidate, run score at valid probability bands: 50%, 60%, 70%, 80%
+    bash scripts/calc-score.sh score {downside} 50 {cagr}
     bash scripts/calc-score.sh score {downside} 60 {cagr}
-    bash scripts/calc-score.sh score {downside} 65 {cagr}
     bash scripts/calc-score.sh score {downside} 70 {cagr}
-    bash scripts/calc-score.sh score {downside} 75 {cagr}
+    bash scripts/calc-score.sh score {downside} 80 {cagr}
     # Use the candidate's actual downside and CAGR; only probability varies
     # Map each score to its size band (and note "0% — fails hard cap" for prob < 60%)
     ```
@@ -469,11 +520,10 @@ Rendered markdown:
 - **Probability Sensitivity:**
   | Probability | Score | Size Band |
   |-------------|-------|-----------|
-  | 55% | {calc} | {band or "0% — fails hard cap"} |
+  | 50% | {calc} | {band or "0% — fails hard cap"} |
   | 60% | {calc} | {band} |
-  | 65% | {calc} | {band} |
   | 70% | {calc} | {band} |
-  | 75% | {calc} | {band} |
+  | 80% | {calc} | {band} |
 - **Structural Diagnosis:**
   - **Role:** {Driver / Filler / Watchlist}
   - **What upgrades to 70+ score?** {specific event or condition}

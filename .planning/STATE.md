@@ -73,7 +73,7 @@ Recent decisions affecting current work:
 
 ### Pending Todos
 
-None yet.
+1. Implement epistemic data contract (area: planning, 8 files)
 
 ### Blockers/Concerns
 

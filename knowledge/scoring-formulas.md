@@ -152,17 +152,22 @@ If question 4 ("Is outcome non-binary?") = **No** AND confidence ≤ 3 → max 5
 
 The analyst classifies each candidate's **dominant risk type**. Before computing effective probability, the orchestrator applies a friction modifier to the PCS confidence score. Friction makes confidence harder to achieve for structurally uncertain risk types.
 
-| Dominant Risk Type | Friction | Condition for Override |
-|--------------------|----------|----------------------|
-| Operational / Financial | 0 (default) | — |
-| Cyclical / Macro | -1 | Unless strong historical precedent (Q3 = Yes with named examples) |
-| Regulatory / Political | -1 to -2 | Unless clear regulatory precedent exists |
-| Legal / Investigation | -2 | Likely triggers binary flag (Q4 = No) |
-| Structural fragility (SPOF) | -1 | Also enables binary flag if not already set |
+| Dominant Risk Type | Default Friction | Override Condition | Overridden Friction |
+|--------------------|------------------|--------------------|---------------------|
+| Operational / Financial | 0 | — | — |
+| Cyclical / Macro | -1 | Q3 = Yes (named historical precedent) | 0 |
+| Regulatory / Political | -2 | Q2 = Yes (stable regulatory environment) | -1 |
+| Legal / Investigation | -2 | No override available | -2 |
+| Structural fragility (SPOF) | -1 | No override; also sets binary flag if Q4 not already No | -1 |
 
-**Application:** `adjusted_confidence = max(1, raw_confidence - friction)`. The adjusted confidence is used for the multiplier lookup and all downstream calculations (effective probability, size cap).
+**Application:** `adjusted_confidence = max(1, raw_confidence - abs(friction))`
 
-**Friction does NOT stack with PCS answers** — it applies after the 5-question count. If Q1="No" already captures the regulatory risk, the friction is confirmatory, not additive. The orchestrator uses judgment: if the analyst's risk type clearly maps to PCS questions already answered "No", apply the lower end of friction ranges.
+**Override logic is deterministic:**
+1. Look up risk type → get default friction
+2. Check PCS answer for override condition → apply or keep default
+3. Record `friction_note` with decision: "{risk_type}, Q{n}={answer} -> friction {value}"
+
+**Friction does NOT stack with PCS answers** — it applies after the 5-question count. The override conditions use PCS answers to determine WHETHER to soften friction, not to add more.
 
 ### Score-to-Position-Size Mapping
 

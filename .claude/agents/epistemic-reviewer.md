@@ -5,7 +5,7 @@ description: |
 
   <example>
   Context: Orchestrator needs confidence assessment for scored candidates
-  user: "Assess epistemic confidence for these candidates: AMN (healthcare staffing, thesis: cyclical recovery)"
+  user: "Assess epistemic confidence for these candidates: {TICKER} ({industry}, thesis: {thesis summary})"
   assistant: "I'll assess the 5 PCS questions for each candidate independently"
   <commentary>
   Epistemic reviewer never sees the analyst's probability — breaks self-assessment loop.

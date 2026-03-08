@@ -606,7 +606,7 @@ For each rejected-at-analysis ticker that reached valuation, probability, downsi
 **Filename convention**: `{YYYY-MM-DD}-{scan-type}-scan-report.md`
 - Full scan → `2026-02-28-full-nyse-scan-report.md`
 - Sector scan → `2026-02-28-consumer-defensive-scan-report.md`
-- Specific tickers → `2026-02-28-CPS-BABA-HRL-scan-report.md`
+- Specific tickers → `{YYYY-MM-DD}-{ticker-list}-scan-report.md`
 
 The scan-type slug is lowercase, hyphenated, derived from the scan parameters.
 Use:

@@ -74,6 +74,7 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 1. Implement epistemic data contract (area: planning, 8 files)
+2. Agent decontamination cleanup (area: planning, 6 files) — depends on #1
 
 ### Blockers/Concerns
 
